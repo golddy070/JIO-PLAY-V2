@@ -1933,6 +1933,7 @@ a{color:#65c9f0!important}
   if ($("logoutBtn")) $("logoutBtn").addEventListener("click", showLogin);
   if ($("bulletinModeSelect")) $("bulletinModeSelect").addEventListener("change", function() { saveBulletinSettings(); });
   if ($("bulletinSaveBtn")) $("bulletinSaveBtn").addEventListener("click", saveBulletinSettings);
+  window.setInterval(refreshBulletinFromCloud, 12000);
 
   function updateSessionUI() {
     sessionMode = $("sessionSel").value || "OPEN";
@@ -2374,6 +2375,28 @@ a{color:#65c9f0!important}
       text.textContent = messages.length ? messages.join("     •     ") : "Waiting for Admin to publish today's results…";
     }
     track.classList.toggle("paused", !text.textContent || text.textContent.length < 34);
+  }
+  async function refreshBulletinFromCloud() {
+    if (!currentUser || !getFbBase()) return;
+    try {
+      var response = await fetch(getFbBase() + "/jio_play_v24/meta.json");
+      if (!response.ok) return;
+      var meta = await response.json();
+      if (!meta || typeof meta !== "object") return;
+      if (meta.savedResults && typeof meta.savedResults === "object") {
+        savedResults = meta.savedResults;
+        sv("jio_play_results_v38", savedResults);
+      }
+      if (meta.bulletin && typeof meta.bulletin === "object") {
+        bulletinMode = meta.bulletin.mode === "ad" ? "ad" : "live";
+        bulletinAdText = String(meta.bulletin.adText || "").slice(0, 180);
+        sv("jio_play_bulletin_mode_v1", bulletinMode);
+        sv("jio_play_bulletin_ad_v1", bulletinAdText);
+        if ($("bulletinModeSelect")) $("bulletinModeSelect").value = bulletinMode;
+        if ($("bulletinAdInput")) $("bulletinAdInput").value = bulletinAdText;
+      }
+      renderBulletin();
+    } catch (e) {}
   }
   function saveBulletinSettings() {
     if (!isAdmin()) return;
