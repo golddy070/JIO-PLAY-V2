@@ -1922,8 +1922,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
           if (!users.some(function(u) { return u.role === "admin"; })) users.unshift(normalizeUserObj(DEFAULT_USERS[0]));
           sv("jio_play_users_v24", users); renderUserList();
         }
-        if (meta.savedResults && typeof meta.savedResults === "object") { savedResults = meta.savedResults; sv("jio_play_results_v38", savedResults); mergeSavedResultsIntoSlides(); }
+        if (meta.savedResults && typeof meta.savedResults === "object") { savedResults = meta.savedResults; sv("jio_play_results_v38", savedResults); }
         if (Array.isArray(meta.resultSlides)) { resultSlides = meta.resultSlides; sv("jio_play_result_slides_v1", resultSlides); }
+        mergeSavedResultsIntoSlides();
         if (Number(meta.slideSpeed)) { slideSpeed = Math.max(4, Math.min(5, Number(meta.slideSpeed))); sv("jio_play_result_speed_v1", slideSpeed); }
         if (typeof meta.headerLinkUrl === "string") { headerLinkUrl = meta.headerLinkUrl; sv("jio_play_header_link_v1", headerLinkUrl); }
         if (meta.marketConfig && typeof meta.marketConfig === "object") { marketConfig = normalizeMarketConfig(meta.marketConfig, heads); sv("jio_play_market_v39", marketConfig); }
@@ -2784,9 +2785,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       var rec = refreshCurrentUserRecord();
       if (!rec || rec.status === "blocked") { showLoginStatus("Your account is blocked.", true); showLogin(); return; }
       if (rec.status === "paused") { applyRolePermissions(); return; }
-      var av = checkHeadingSessionAvailability(activeHeadName, activeSessName);
-      if (!av.allowed) { $("errbox").textContent = av.reason; $("errbox").classList.remove("hide"); return; }
     }
+    var av = checkHeadingSessionAvailability(activeHeadName, activeSessName);
+    if (!av.allowed) { $("errbox").textContent = av.reason; $("errbox").classList.remove("hide"); return; }
     if (!rows.length) return;
     var pending = rows.filter(function(r) { return r.a === null; }).length;
     if (pending) { var btn = this; btn.textContent = pending + " entry needs value"; setTimeout(function() { btn.textContent = "Generate & Save Slip"; }, 2200); return; }
