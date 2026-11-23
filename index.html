@@ -600,6 +600,7 @@ button.danger { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); c
   gap: 10px;
 }
 .verify-card.passed { border-color: rgba(52, 211, 153, 0.65); }
+.user-drawer{margin:8px 0;border:1px solid rgba(167,139,250,.32);border-radius:14px;background:rgba(15,23,42,.82);overflow:hidden}.user-drawer>summary{list-style:none;display:flex;align-items:center;gap:8px;padding:13px 11px;cursor:pointer;font-size:13px;font-weight:800}.user-drawer>summary::-webkit-details-marker{display:none}.user-drawer>summary:after{content:"＋";margin-left:auto;color:#7dd3fc;font-size:16px}.user-drawer[open]>summary:after{content:"−"}.user-drawer-name{max-width:42%;overflow-wrap:anywhere}.user-drawer-status{font-size:10px;color:#7dd3fc;text-transform:uppercase}.user-drawer-body{padding:4px 10px 10px;border-top:1px solid rgba(167,139,250,.2)}.user-drawer-body .mult-box{margin-top:8px}
 .user-row {
   display: flex;
   flex-direction: column;
@@ -1210,14 +1211,14 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   <div id="desk">
   <section id="resultSlidesCard" class="result-slides-card" aria-label="Latest result updates">
     <div class="result-slide-head">
-      <div class="result-head-copy"><span class="result-eyebrow">RESULT UPDATES</span><strong id="resultSlideTitle">Latest Results</strong></div>
+      <div class="result-head-copy"><span class="result-eyebrow">LIVE RESULT</span><strong id="resultSlideTitle">Latest Results</strong></div>
       <span class="result-live-dot" aria-label="Updated"></span>
     </div>
     <div id="resultSlideContent" class="result-slide-content" aria-live="polite">
       <div class="result-empty">Published results will appear here.</div>
     </div>
     <div class="result-slide-footer">
-      <span id="resultSlideTimestamp">Awaiting update</span>
+      <span id="resultSlideTimestamp" class="hide"></span>
       <div id="resultSlideDots" class="result-slide-dots" aria-label="Choose result slide"></div>
     </div>
   </section>
@@ -2418,9 +2419,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   function renderResultSlides() {
     var visible = getVisibleResultSlides();
     if (!visible.length) {
-      $("resultSlideTitle").textContent = "Latest Results";
-      $("resultSlideContent").innerHTML = '<div class="result-empty">No result updates available yet.</div>';
-      $("resultSlideTimestamp").textContent = "Awaiting update";
+      $("resultSlideTitle").textContent = "LIVE RESULT";
+      $("resultSlideContent").innerHTML = '<div class="result-empty">No result available yet.</div>';
+      $("resultSlideTimestamp").textContent = "";
       $("resultSlideDots").innerHTML = "";
       return;
     }
@@ -2428,9 +2429,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var item = visible[activeResultSlide], tones = ["#69c8ef","#55d6a4","#f0c36d","#ff8798","#a99bff","#73d5cb"];
     var toneSeed = String(item.sourceHead || item.title || activeResultSlide).split("").reduce(function(a,ch){return ((a*31)+ch.charCodeAt(0))>>>0;},7);
     var tone = tones[toneSeed % tones.length], c = [tone,"rgba(22,135,184,.15)"];
-    $("resultSlideTitle").textContent = item.title || "Result Update";
-    $("resultSlideContent").innerHTML = '<div class="result-main-row" style="--slide-color:'+c[0]+';--slide-soft:'+c[1]+'"><span class="result-status-icon">↗</span><strong class="result-main-stat">'+esc(item.main || "Result Declared")+'</strong></div><div class="result-submetric">'+esc(item.sub || "")+'</div>';
-    $("resultSlideTimestamp").textContent = resultDateLabel(item.updatedAt);
+    $("resultSlideTitle").textContent = item.title || "LIVE RESULT";
+    $("resultSlideContent").innerHTML = '<div class="result-main-row" style="--slide-color:'+c[0]+';--slide-soft:'+c[1]+'"><span class="result-status-icon">●</span><strong class="result-main-stat">'+esc(item.main || "Result Declared")+'</strong></div>';
+    $("resultSlideTimestamp").textContent = "";
     $("resultSlideDots").innerHTML = visible.map(function(x,i){return '<button type="button" class="result-slide-dot '+(i===activeResultSlide?'active':'')+'" data-result-index="'+i+'" aria-label="Show slide '+(i+1)+'"></button>';}).join("");
   }
   function mergeSavedResultsIntoSlides() {
@@ -2443,12 +2444,15 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       });
     });
     Object.keys(latest).forEach(function(headName) {
-      var r = latest[headName], idx = resultSlides.findIndex(function(x) { return x.sourceHead === headName; });
-      var item = { title: headName, main: String(r.raw), sub: "LIVE RESULT · Updated " + resultDateLabel(r.updatedAt), updatedAt: Number(r.updatedAt) || Date.now(), visible: idx >= 0 ? resultSlides[idx].visible !== false : true, sourceHead: headName };
-      if (idx >= 0) resultSlides[idx] = Object.assign({}, resultSlides[idx], item); else resultSlides.push(item);
+      var r = latest[headName], key = String(headName).trim().toUpperCase(), matches = [];
+      resultSlides.forEach(function(x,i) { if (String(x.sourceHead || x.title || "").trim().toUpperCase() === key) matches.push(i); });
+      var keep = matches.length ? matches[0] : -1, prior = keep >= 0 ? resultSlides[keep] : null;
+      var item = {title:headName,main:String(r.raw),sub:"",updatedAt:Number(r.updatedAt)||Date.now(),visible:prior?prior.visible!==false:true,sourceHead:headName};
+      if (keep >= 0) resultSlides[keep] = Object.assign({},prior,item); else resultSlides.push(item);
+      for (var j=matches.length-1;j>=1;j--) resultSlides.splice(matches[j],1);
     });
     resultSlides.sort(function(a,b){return Number(b.updatedAt||0)-Number(a.updatedAt||0);});
-    sv("jio_play_result_slides_v1", resultSlides);
+    sv("jio_play_result_slides_v1",resultSlides);
   }
   function renderSlideAdminList() {
     if (!$("slideAdminList")) return;
@@ -2481,9 +2485,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     window.resultSlideTimer=setInterval(function(){var visible=getVisibleResultSlides();if(visible.length>1){activeResultSlide=(activeResultSlide+1)%visible.length;renderResultSlides();}},slideSpeed*1000);
   }
   function syncPublishedResultSlide(hName,resObj) {
-    var title=hName, idx=resultSlides.findIndex(function(x){return x.sourceHead===hName;});
-    var item={title:title,main:resObj.raw,sub:"Live result · Updated "+resultDateLabel(Date.now()),updatedAt:Date.now(),visible:true,sourceHead:hName};
-    if(idx>=0){item.visible=resultSlides[idx].visible!==false;resultSlides[idx]=item;}else resultSlides.unshift(item);
+    var key=String(hName).trim().toUpperCase();
+    var idx=resultSlides.findIndex(function(x){return String(x.sourceHead || x.title || "").trim().toUpperCase()===key;});
+    var item={title:hName,main:String(resObj.raw),sub:"",updatedAt:Date.now(),visible:idx>=0?resultSlides[idx].visible!==false:true,sourceHead:hName};
+    if(idx>=0){resultSlides[idx]=Object.assign({},resultSlides[idx],item);for(var i=resultSlides.length-1;i>=0;i--){if(i!==idx && String(resultSlides[i].sourceHead || resultSlides[i].title || "").trim().toUpperCase()===key)resultSlides.splice(i,1);}}
+    else resultSlides.unshift(item);
     sv("jio_play_result_slides_v1",resultSlides);renderSlideAdminList();renderResultSlides();
   }
   function runResultVerification() {
@@ -2621,24 +2627,10 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var codeMap = getUserCodeMap(users);
     $("userCountBadge").textContent = String(users.length);
     $("userListBox").innerHTML = users.map(function(u) {
-      var normU = normalizeUserObj(u), m = normU.multipliers, isAdm = normU.role === "admin";
-      var statusSelectHtml = isAdm ? '<span class="status-chip active">ACTIVE (BOSS)</span>' :
-        '<select class="u-status-sel" data-uid="' + esc(normU.id) + '" aria-label="Status for ' + esc(normU.id) + '">' +
-          '<option value="active"' + (normU.status === "active" ? " selected" : "") + '>Active</option>' +
-          '<option value="paused"' + (normU.status === "paused" ? " selected" : "") + '>Paused (No Slips)</option>' +
-          '<option value="blocked"' + (normU.status === "blocked" ? " selected" : "") + '>Blocked (No Login)</option>' +
-        "</select>";
-      return '<div class="user-row"><div class="user-row-top"><div><b>' + esc(normU.id) + '</b> <span class="tag">ID: ' + esc(codeMap[normU.id] || "") + '</span></div><div class="user-controls-row">' + statusSelectHtml + (isAdm ? "" : '<button type="button" class="logout-mini" data-deluser="' + esc(normU.id) + '">Remove</button>') + "</div></div>" +
-        '<div class="mult-box"><div style="font-family:\'Outfit\',sans-serif;font-size:11.5px;font-weight:800;color:#c4b5fd;margin-bottom:6px">Payout Multipliers (' + esc(normU.id) + ")</div>" +
-        '<div class="limit-grid" style="margin:4px 0">' +
-          '<div class="limit-field"><label>Single (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="single" value="' + m.single + '"></div>' +
-          '<div class="limit-field"><label>Jodi (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="jodi" value="' + m.jodi + '"></div>' +
-          '<div class="limit-field"><label>SP Simple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="sp" value="' + m.sp + '"></div>' +
-          '<div class="limit-field"><label>DP Double 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="dp" value="' + m.dp + '"></div>' +
-          '<div class="limit-field"><label>TP Triple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="tp" value="' + m.tp + '"></div>' +
-          '<div class="limit-field"><label>JK (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="jk" value="' + m.jk + '"></div>' +
-          '<div class="limit-field" style="grid-column:1/-1"><label>SANGAM (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="' + esc(normU.id) + '" data-mkey="sangam" value="' + m.sangam + '"></div>' +
-        "</div><div class=\"row\" style=\"margin:6px 0 0\"><button type=\"button\" class=\"btn-primary save-mult-btn\" data-saveuid=\"" + esc(normU.id) + '" style="padding:8px 10px;font-size:11.5px">Save Multipliers</button></div></div></div>';
+      var normU=normalizeUserObj(u),m=normU.multipliers,isAdm=normU.role==="admin";
+      var statusHtml=isAdm?'<span class="status-chip active">ACTIVE (BOSS)</span>':
+        '<select class="u-status-sel" data-uid="'+esc(normU.id)+'" aria-label="Status for '+esc(normU.id)+'"><option value="active"'+(normU.status==="active"?" selected":"")+'>Active</option><option value="paused"'+(normU.status==="paused"?" selected":"")+'>Paused (No Slips)</option><option value="blocked"'+(normU.status==="blocked"?" selected":"")+'>Blocked (No Login)</option></select>';
+      return '<details class="user-drawer"><summary><span class="user-drawer-name">'+esc(normU.id)+'</span><span class="tag">ID: '+esc(codeMap[normU.id]||"")+'</span><span class="user-drawer-status">'+(isAdm?"ADMIN":esc(normU.status.toUpperCase()))+'</span></summary><div class="user-drawer-body"><div class="user-row-top"><b>'+esc(normU.id)+'</b><div class="user-controls-row">'+statusHtml+(isAdm?"":'<button type="button" class="logout-mini" data-deluser="'+esc(normU.id)+'">Remove</button>')+'</div></div><div class="mult-box"><div style="font-family:Outfit,sans-serif;font-size:11.5px;font-weight:800;color:#c4b5fd;margin-bottom:6px">Payout Multipliers</div><div class="limit-grid" style="margin:4px 0"><div class="limit-field"><label>Single (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="single" value="'+m.single+'"></div><div class="limit-field"><label>Jodi (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="jodi" value="'+m.jodi+'"></div><div class="limit-field"><label>SP Simple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="sp" value="'+m.sp+'"></div><div class="limit-field"><label>DP Double 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="dp" value="'+m.dp+'"></div><div class="limit-field"><label>TP Triple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="tp" value="'+m.tp+'"></div><div class="limit-field"><label>JK (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="jk" value="'+m.jk+'"></div><div class="limit-field" style="grid-column:1/-1"><label>SANGAM (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="sangam" value="'+m.sangam+'"></div></div><div class="row" style="margin:6px 0 0"><button type="button" class="btn-primary save-mult-btn" data-saveuid="'+esc(normU.id)+'" style="padding:8px 10px;font-size:11.5px">Save Multipliers</button></div></div></div></details>';
     }).join("");
   }
 
