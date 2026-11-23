@@ -1560,7 +1560,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   var SUPABASE_PUBLISHABLE_KEY = "sb_publishable_m2h9SDfq3UC6JLmqbqYipQ_9WayzYEU";
   var ADMIN_EMAIL = "golddy070@gmail.com";
   var supabaseClient = null;
-  try { if (window.supabase && window.supabase.createClient) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY); }
+  try { if (window.supabase && window.supabase.createClient) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage } }); }
   catch (supabaseInitError) { console.error("Supabase initialization failed", supabaseInitError); }
   var WARN = "चिट्टी तपासून घेणे नंतर तक्रार चालणार नाही.";
   var DEFAULT_HEADS = [
@@ -1956,7 +1956,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       if (cloudSlips.length) { cloudSlips.sort(function(x,y) { return (y.t || 0) - (x.t || 0); }); hist = cloudSlips; sv("jio_play_hist_v24", hist); }
       if (currentUser && !isAdmin()) {
         var fresh = refreshCurrentUserRecord();
-        if (!fresh || fresh.status === "blocked") { showLoginStatus("Your account is blocked by Admin.", true); showLogin(); return; }
+        if (!fresh || fresh.status === "blocked") { clearLoginSession(); showLoginStatus("Your account is blocked by Admin.", true); showLogin(); return; }
         currentUser = fresh;
       }
       applyRolePermissions(); updateSessionUI(); renderDesk(); renderHistory(); renderDataTab(); renderLoadingTab(); renderHisabTab(); renderMarketTab();
@@ -1990,7 +1990,42 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     if ($("gen")) $("gen").disabled = isPaused;
   }
 
+  var LOGIN_SESSION_KEY = "jio_play_login_session_v1";
+  function saveLoginSession(user) {
+    if (!user) return;
+    try { window.localStorage.setItem(LOGIN_SESSION_KEY, JSON.stringify({ id: user.id, role: user.role, savedAt: Date.now() })); } catch (e) {}
+  }
+  function clearLoginSession() {
+    try { window.localStorage.removeItem(LOGIN_SESSION_KEY); } catch (e) {}
+  }
+  async function restoreSavedSession() {
+    var saved = null;
+    try { saved = JSON.parse(window.localStorage.getItem(LOGIN_SESSION_KEY) || "null"); } catch (e) {}
+    try {
+      if (saved && saved.role === "user" && saved.id) {
+        var rememberedUser = users.find(function(u) { return String(u.id).toLowerCase() === String(saved.id).toLowerCase() && u.role !== "admin"; });
+        if (rememberedUser && rememberedUser.status !== "blocked") {
+          currentUser = normalizeUserObj(rememberedUser);
+          enterApp();
+          return;
+        }
+        clearLoginSession();
+      }
+      if (supabaseClient) {
+        var sessionResult = await supabaseClient.auth.getSession();
+        if (!sessionResult.error && sessionResult.data && sessionResult.data.session && String((sessionResult.data.session.user || {}).email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+          currentUser = { id: "admin", pass: "", role: "admin", status: "active", multipliers: normalizeMultipliers(DEFAULT_MULTIPLIERS) };
+          saveLoginSession(currentUser);
+          enterApp();
+          return;
+        }
+      }
+    } catch (restoreError) { console.warn("Session restore failed", restoreError); }
+    clearLoginSession();
+    showLogin();
+  }
   function enterApp() {
+    saveLoginSession(currentUser);
     $("loginGate").classList.add("hide"); $("app").classList.remove("hide");
     applyRolePermissions(); fillHeads(); updateSessionUI(); renderDesk(); renderUserList(); renderMarketTab();
     // Always start with New Slip and hide every other page after login.
@@ -2030,7 +2065,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
   if ($("loginBtn")) $("loginBtn").addEventListener("click", attemptLogin);
   if ($("loginPass")) $("loginPass").addEventListener("keydown", function(e) { if (e.key === "Enter") attemptLogin(); });
-  if ($("logoutBtn")) $("logoutBtn").addEventListener("click", async function(){closeDrawer();showLogin();if(supabaseClient){try{await supabaseClient.auth.signOut();}catch(e){}}});
+  if ($("logoutBtn")) $("logoutBtn").addEventListener("click", async function(){closeDrawer();clearLoginSession();showLogin();if(supabaseClient){try{await supabaseClient.auth.signOut();}catch(e){}}});
   $("announcementPublishBtn").addEventListener("click",saveAdminAnnouncement);
   $("announcementHideBtn").addEventListener("click",hideAdminAnnouncement);
   $("announcementDeleteBtn").addEventListener("click",deleteAdminAnnouncement);
@@ -2885,7 +2920,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var activeHeadName = heads[hi] || heads[0], activeSessName = $("sessionSel").value || "OPEN";
     if (!isAdmin()) {
       var rec = refreshCurrentUserRecord();
-      if (!rec || rec.status === "blocked") { showLoginStatus("Your account is blocked.", true); showLogin(); return; }
+      if (!rec || rec.status === "blocked") { clearLoginSession(); showLoginStatus("Your account is blocked.", true); showLogin(); return; }
       if (rec.status === "paused") { applyRolePermissions(); return; }
     }
     var av = checkHeadingSessionAvailability(activeHeadName, activeSessName);
@@ -3130,7 +3165,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     reader.readAsText(f);
   };
 
-  showLogin();
+  restoreSavedSession();
 })();
 </script>
 </body>
