@@ -1985,6 +1985,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   function enterApp() {
     $("loginGate").classList.add("hide"); $("app").classList.remove("hide");
     applyRolePermissions(); fillHeads(); updateSessionUI(); renderDesk(); renderUserList(); renderMarketTab();
+    // Always start with New Slip and hide every other page after login.
+    switchTab(1);
     if (getFbBase()) pullStateFromFirebase(true);
   }
   function showLogin() {
