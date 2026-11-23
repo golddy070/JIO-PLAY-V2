@@ -1936,7 +1936,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     try { await firebaseFetch(base + "/jio_play_v24/slips/" + encodeURIComponent(slip.cloudKey) + ".json", { method: "DELETE" }); } catch (e) {}
   }
   async function pullStateFromFirebase(silent) {
-    var base = getFbBase(); if (!base) { updateCloudBadge("Local Only", false); return; }
+    var base = getFbBase(); if (!base) { updateCloudBadge("Local Only", false); throw new Error("Firebase database URL is missing."); }
     try {
       var res = await firebaseFetch(base + "/jio_play_v24.json");
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -1969,9 +1969,15 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
           currentUser = fresh;
         }
         applyRolePermissions(); updateSessionUI(); renderDesk(); renderHistory(); renderDataTab(); renderLoadingTab(); renderHisabTab(); renderMarketTab();
-        updateCloudBadge("Cloud Live", true);
       }
-    } catch (e) { updateCloudBadge("Cloud Error", false); }
+      updateCloudBadge("Cloud Live", true);
+      return true;
+    } catch (e) {
+      updateCloudBadge("Cloud Error", false);
+      console.error("Firebase cloud pull failed", e);
+      if (!silent) throw e;
+      return false;
+    }
   }
 
   function applyRolePermissions() {
@@ -3084,10 +3090,19 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     } finally { btn.disabled = false; }
   };
   $("pullFbBtn").onclick = async function() {
-    if (!isAdmin()) return;
-    $("syncMsg").textContent = "Pulling cloud data...";
-    await pullStateFromFirebase(false);
-    if ($("fbStatusText").textContent.indexOf("Error") === -1) $("syncMsg").textContent = "Cloud data pull completed ✓";
+    var msg = $("syncMsg");
+    if (!isAdmin()) { msg.textContent = "Admin login required to pull cloud data."; return; }
+    var btn = $("pullFbBtn");
+    btn.disabled = true;
+    msg.textContent = "Pulling cloud data...";
+    try {
+      await pullStateFromFirebase(false);
+      msg.textContent = "Cloud data pulled successfully ✓";
+    } catch (err) {
+      msg.textContent = "Cloud pull failed: " + (err && err.message ? err.message : "Unknown error");
+    } finally {
+      btn.disabled = false;
+    }
   };
   $("btPrint").onclick = directBluetoothPrint; $("print").onclick = function() { window.print(); };
   $("copy").onclick = function() { if (curSlip) copyTextReliable(formatSlipText(curSlip), this, "Copy Slip"); };
