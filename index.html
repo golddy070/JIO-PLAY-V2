@@ -277,6 +277,7 @@ header::before {
   align-items: center;
   justify-content: space-between;
 }
+.market-heading-card{margin:8px 0;padding:8px;border:1px solid var(--bd);border-radius:16px;background:rgba(15,20,42,.72)}.market-heading-toggle{margin:0;background:linear-gradient(135deg,#18264a,#25204d);border-color:rgba(125,211,252,.28)}.market-heading-toggle[aria-expanded="true"]{background:linear-gradient(135deg,#4f46e5,#7c3aed)}.market-heading-panel{padding:10px 4px 4px}.market-heading-status{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-bottom:8px}#toggleHisabResults{width:100%}
 .nav-item.on {
   background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
   color: #ffffff;
@@ -1159,36 +1160,26 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     </div>
     <button type="button" id="closeMenu" class="drawer-close" aria-label="Close Menu">&#10005;</button>
   </div>
-  <button type="button" id="toggleSlidesManager" class="nav-item admin-only"><span>Result Slides Manager</span><span class="nav-pill">+</span></button>
+  <button type="button" id="t1" class="nav-item on"><span>1. New Slip</span></button>
+  <button type="button" id="t2" class="nav-item"><span>2. History</span><span class="nav-pill" id="hc">0</span></button>
+  <button type="button" id="t3" class="nav-item"><span>3. Data</span></button>
+  <button type="button" id="t6" class="nav-item admin-only"><span>4. Loading</span></button>
+  <button type="button" id="t5" class="nav-item"><span>5. Verify Result</span></button>
+  <button type="button" id="t7" class="nav-item admin-only"><span>6. Hisab</span></button>
+  <button type="button" id="t8" class="nav-item admin-only"><span>7. Market</span></button>
+  <button type="button" id="toggleSlidesManager" class="nav-item admin-only"><span>8. Result Slides</span><span class="nav-pill">+</span></button>
   <div id="resultAdminPanel" class="result-admin-panel admin-only hide">
     <div class="result-admin-title">Result Slides Manager</div>
     <div class="result-admin-form">
-      <input id="slideTitleInput" maxlength="70" placeholder="Result title / exam name">
-      <input id="slideMainInput" maxlength="90" placeholder="Main stat / status">
-      <input id="slideSubInput" maxlength="110" placeholder="Sub-metric / extra detail">
-      <input id="slideTimeInput" type="datetime-local" aria-label="Update timestamp">
-      <div class="result-admin-row">
-        <button type="button" id="slideAddBtn" class="btn-primary">Add Slide</button>
-        <button type="button" id="slideCancelBtn" class="btn-clear hide">Cancel Edit</button>
-      </div>
+      <input id="slideTitleInput" maxlength="70" placeholder="Result title / exam name"><input id="slideMainInput" maxlength="90" placeholder="Main stat / status"><input id="slideSubInput" maxlength="110" placeholder="Sub-metric / extra detail"><input id="slideTimeInput" type="datetime-local" aria-label="Update timestamp">
+      <div class="result-admin-row"><button type="button" id="slideAddBtn" class="btn-primary">Add Slide</button><button type="button" id="slideCancelBtn" class="btn-clear hide">Cancel Edit</button></div>
     </div>
-    <div id="slideAdminList" class="slide-admin-list"></div>
-    <label class="slide-speed-label" for="slideSpeedInput">Auto-rotation: <b id="slideSpeedValue">5 sec</b></label>
-    <input id="slideSpeedInput" type="range" min="4" max="5" step="1" value="5">
-    <button type="button" id="slideSaveBtn" class="btn-primary" style="width:100%;margin-top:9px">Save Changes</button>
-    <div id="slideAdminMsg" class="bt-status" aria-live="polite"></div>
+    <div id="slideAdminList" class="slide-admin-list"></div><label class="slide-speed-label" for="slideSpeedInput">Auto-rotation: <b id="slideSpeedValue">5 sec</b></label><input id="slideSpeedInput" type="range" min="4" max="5" step="1" value="5"><button type="button" id="slideSaveBtn" class="btn-primary" style="width:100%;margin-top:9px">Save Changes</button><div id="slideAdminMsg" class="bt-status" aria-live="polite"></div>
   </div>
-  <button type="button" id="toggleLinkSettings" class="nav-item admin-only"><span>Link Settings</span><span class="nav-pill">↗</span></button>
+  <button type="button" id="toggleLinkSettings" class="nav-item admin-only"><span>9. Link Settings</span><span class="nav-pill">↗</span></button>
   <div id="linkSettingsPanel" class="result-admin-panel admin-only hide"><div class="result-admin-title">Header Link</div><input id="headerLinkInput" type="url" placeholder="Paste destination URL (https://...)"><button type="button" id="saveHeaderLinkBtn" class="btn-primary" style="width:100%;margin-top:8px">Save Link</button><div id="headerLinkMsg" class="bt-status" aria-live="polite"></div></div>
-  <button type="button" id="t1" class="nav-item on"><span>New Slip</span></button>
-  <button type="button" id="t2" class="nav-item"><span>History</span><span class="nav-pill" id="hc">0</span></button>
-  <button type="button" id="t3" class="nav-item"><span>Data</span></button>
-  <button type="button" id="t6" class="nav-item admin-only"><span>+ Loading</span></button>
-  <button type="button" id="t7" class="nav-item admin-only"><span>Hisab</span></button>
-  <button type="button" id="t5" class="nav-item"><span>Verify Result</span></button>
-  <button type="button" id="t4" class="nav-item admin-only"><span>Sync / Users</span></button>
-  <button type="button" id="t8" class="nav-item admin-only"><span>Market</span></button>
-  <button type="button" id="logoutBtn" class="nav-item admin-only"><span>Logout</span><span class="nav-pill">↗</span></button>
+  <button type="button" id="t4" class="nav-item admin-only"><span>10. Sync / Users</span></button>
+  <button type="button" id="logoutBtn" class="nav-item"><span>11. Logout</span><span class="nav-pill">↗</span></button>
 </aside>
 
 <div id="app" class="site-shell hide">
@@ -1328,35 +1319,6 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         <td><select id="lUserSel"></select></td>
       </tr>
     </table>
-    <div class="stat-group" id="adminCopyLimitBox">
-      <div class="stat-head"><b>One-Click Copy (All 5 Parts)</b><span style="font-size:12px;color:#fde047">LIMIT</span></div>
-      <div class="limit-grid">
-        <div class="limit-field">
-          <label for="limSingle">Single LIMIT</label>
-          <input id="limSingle" type="number" min="0" step="any" placeholder="0 (No limit)">
-        </div>
-        <div class="limit-field">
-          <label for="limDouble">Double LIMIT</label>
-          <input id="limDouble" type="number" min="0" step="any" placeholder="0 (No limit)">
-        </div>
-        <div class="limit-field">
-          <label for="limTriple">Triple LIMIT</label>
-          <input id="limTriple" type="number" min="0" step="any" placeholder="0 (No limit)">
-        </div>
-        <div class="limit-field">
-          <label for="limJk">JK LIMIT</label>
-          <input id="limJk" type="number" min="0" step="any" placeholder="0 (No limit)">
-        </div>
-        <div class="limit-field" style="grid-column:1/-1">
-          <label for="limSangam">SANGAM LIMIT</label>
-          <input id="limSangam" type="number" min="0" step="any" placeholder="0 (No limit)">
-        </div>
-      </div>
-      <div class="row" style="margin:8px 0 2px">
-        <button type="button" id="lOneClickCopyBtn" class="btn-copy">Copy All 5 Parts</button>
-      </div>
-      <div class="bt-status">Includes Game + Session header; subtracts each part's LIMIT for copy only.</div>
-    </div>
     <div class="mode-switch-row">
       <button type="button" class="mode-chip-btn active" data-lmode="SINGLE">Single (1-0)</button>
       <button type="button" class="mode-chip-btn" data-lmode="DOUBLE">Double (00-99)</button>
@@ -1393,6 +1355,35 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       <span id="lGrandTotal">0₹</span>
     </div>
     <div id="lLinkedExposureBox"></div>
+    <div class="stat-group" id="adminCopyLimitBox">
+      <div class="stat-head"><b>One-Click Copy (All 5 Parts)</b><span style="font-size:12px;color:#fde047">LIMIT</span></div>
+      <div class="limit-grid">
+        <div class="limit-field">
+          <label for="limSingle">Single LIMIT</label>
+          <input id="limSingle" type="number" min="0" step="any" placeholder="0 (No limit)">
+        </div>
+        <div class="limit-field">
+          <label for="limDouble">Double LIMIT</label>
+          <input id="limDouble" type="number" min="0" step="any" placeholder="0 (No limit)">
+        </div>
+        <div class="limit-field">
+          <label for="limTriple">Triple LIMIT</label>
+          <input id="limTriple" type="number" min="0" step="any" placeholder="0 (No limit)">
+        </div>
+        <div class="limit-field">
+          <label for="limJk">JK LIMIT</label>
+          <input id="limJk" type="number" min="0" step="any" placeholder="0 (No limit)">
+        </div>
+        <div class="limit-field" style="grid-column:1/-1">
+          <label for="limSangam">SANGAM LIMIT</label>
+          <input id="limSangam" type="number" min="0" step="any" placeholder="0 (No limit)">
+        </div>
+      </div>
+      <div class="row" style="margin:8px 0 2px">
+        <button type="button" id="lOneClickCopyBtn" class="btn-copy">Copy All 5 Parts</button>
+      </div>
+      <div class="bt-status">Includes Game + Session header; subtracts each part's LIMIT for copy only.</div>
+    </div>
     <div id="lUserwiseBreakdown"></div>
   </div>
 
@@ -1411,23 +1402,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     </div>
 
     <div class="stat-group">
-      <div class="stat-head"><b>Saved Result Updates</b><span id="hisabResultCount">0</span></div>
-      <div id="hisabResultsList"></div>
+      <button type="button" id="toggleHisabResults" class="nav-item" aria-expanded="false"><span>RESULTS</span><span class="nav-pill" id="hisabResultCount">0</span></button>
+      <div id="hisabResultsList" class="hide" style="padding-top:8px"></div>
     </div>
-
-    <div class="stat-group" id="adminFinalSlipCard">
-      <div class="stat-head"><b>Admin Final Hisab Slip</b><span>ADMIN</span></div>
-      <div id="adminFinalSlipPre" class="hisab-slip-pre"></div>
-      <div class="row" style="margin-bottom:2px">
-        <button type="button" id="copyFinalHisabBtn" class="btn-copy">Copy Final Slip</button>
-        <button type="button" id="shareFinalHisabBtn" class="btn-share">Share</button>
-      </div>
-    </div>
-
-    <div class="stat-group">
-      <div class="stat-head"><b>All Users Hisab Breakdown</b><span id="hisabUserCount">0</span></div>
-      <div id="hisabUserBreakdown"></div>
-    </div>
+    <div class="stat-group"><div class="stat-head"><b>All Users Hisab Breakdown</b><span id="hisabUserCount">0</span></div><div id="hisabUserBreakdown"></div></div>
+    <div class="stat-group" id="adminFinalSlipCard"><div class="stat-head"><b>Admin Final Hisab Slip</b><span>ADMIN</span></div><div id="adminFinalSlipPre" class="hisab-slip-pre"></div><div class="row" style="margin-bottom:2px"><button type="button" id="copyFinalHisabBtn" class="btn-copy">Copy Final Slip</button><button type="button" id="shareFinalHisabBtn" class="btn-share">Share</button></div></div>
   </div>
 
   <!-- TAB 5: VERIFY RESULT -->
@@ -2623,23 +2602,17 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     marketConfig = normalizeMarketConfig(marketConfig, heads);
     $("mktHeadingsList").innerHTML = heads.map(function(hName, idx) {
       var cfg = marketConfig[hName], openCfg = cfg.sessions.OPEN || { active: true, cutoff: "" }, closeCfg = cfg.sessions.CLOSE || { active: true, cutoff: "" };
-      return '<div class="stat-group" data-mhead="' + esc(hName) + '">' +
-        '<div class="stat-head"><b>' + esc(hName) + "</b>" +
-          '<div class="user-controls-row">' +
-            '<select class="m-h-active" data-mh="' + esc(hName) + '"><option value="1"' + (cfg.active !== false ? " selected" : "") + '>Active</option><option value="0"' + (cfg.active === false ? " selected" : "") + '>Closed</option></select>' +
-            (heads.length > 1 ? '<button type="button" class="logout-mini" data-delmhead="' + esc(hName) + '">Remove</button>' : "") +
-          "</div>" +
-        "</div>" +
-        '<div class="limit-grid">' +
-          '<div class="limit-field"><label>Rename Heading</label><input type="text" class="m-h-rename" data-mh="' + esc(hName) + '" data-midx="' + idx + '" value="' + esc(hName) + '"></div>' +
-          '<div class="limit-field"><label>Heading Cut-Off (HH:MM)</label><input type="time" class="m-h-cutoff" data-mh="' + esc(hName) + '" value="' + esc(cfg.cutoff || "") + '"></div>' +
-          '<div class="limit-field"><label>OPEN Session</label><select class="m-s-active" data-mh="' + esc(hName) + '" data-ms="OPEN"><option value="1"' + (openCfg.active !== false ? " selected" : "") + '>Open</option><option value="0"' + (openCfg.active === false ? " selected" : "") + '>Locked</option></select></div>' +
-          '<div class="limit-field"><label>OPEN Cut-Off (HH:MM)</label><input type="time" class="m-s-cutoff" data-mh="' + esc(hName) + '" data-ms="OPEN" value="' + esc(openCfg.cutoff || "") + '"></div>' +
-          '<div class="limit-field"><label>CLOSE Session</label><select class="m-s-active" data-mh="' + esc(hName) + '" data-ms="CLOSE"><option value="1"' + (closeCfg.active !== false ? " selected" : "") + '>Open</option><option value="0"' + (closeCfg.active === false ? " selected" : "") + '>Locked</option></select></div>' +
-          '<div class="limit-field"><label>CLOSE Cut-Off (HH:MM)</label><input type="time" class="m-s-cutoff" data-mh="' + esc(hName) + '" data-ms="CLOSE" value="' + esc(closeCfg.cutoff || "") + '"></div>' +
-        "</div>" +
-        '<div class="row" style="margin:6px 0 0"><button type="button" class="btn-primary m-save-btn" data-savemh="' + esc(hName) + '" style="padding:9px 12px;font-size:12px">Save Market Rules</button></div>' +
-      "</div>";
+      return '<div class="market-heading-card" data-mhead="' + esc(hName) + '">' +
+        '<button type="button" class="market-heading-toggle nav-item" data-mtoggle="' + idx + '" aria-expanded="false"><span>' + esc(hName) + '</span><span class="nav-pill">EDIT</span></button>' +
+        '<div class="market-heading-panel hide" data-mpanel="' + idx + '">' +
+        '<div class="market-heading-status"><select class="m-h-active" data-mh="' + esc(hName) + '"><option value="1"' + (cfg.active !== false ? " selected" : "") + '>Active</option><option value="0"' + (cfg.active === false ? " selected" : "") + '>Closed</option></select>' + (heads.length > 1 ? '<button type="button" class="logout-mini" data-delmhead="' + esc(hName) + '">Remove</button>' : "") + '</div>' +
+        '<div class="limit-grid"><div class="limit-field"><label>Rename Heading</label><input type="text" class="m-h-rename" data-mh="' + esc(hName) + '" data-midx="' + idx + '" value="' + esc(hName) + '"></div>' +
+        '<div class="limit-field"><label>Heading Cut-Off (HH:MM)</label><input type="time" class="m-h-cutoff" data-mh="' + esc(hName) + '" value="' + esc(cfg.cutoff || "") + '"></div>' +
+        '<div class="limit-field"><label>OPEN Session</label><select class="m-s-active" data-mh="' + esc(hName) + '" data-ms="OPEN"><option value="1"' + (openCfg.active !== false ? " selected" : "") + '>Open</option><option value="0"' + (openCfg.active === false ? " selected" : "") + '>Locked</option></select></div>' +
+        '<div class="limit-field"><label>OPEN Cut-Off (HH:MM)</label><input type="time" class="m-s-cutoff" data-mh="' + esc(hName) + '" data-ms="OPEN" value="' + esc(openCfg.cutoff || "") + '"></div>' +
+        '<div class="limit-field"><label>CLOSE Session</label><select class="m-s-active" data-mh="' + esc(hName) + '" data-ms="CLOSE"><option value="1"' + (closeCfg.active !== false ? " selected" : "") + '>Open</option><option value="0"' + (closeCfg.active === false ? " selected" : "") + '>Locked</option></select></div>' +
+        '<div class="limit-field"><label>CLOSE Cut-Off (HH:MM)</label><input type="time" class="m-s-cutoff" data-mh="' + esc(hName) + '" data-ms="CLOSE" value="' + esc(closeCfg.cutoff || "") + '"></div></div>' +
+        '<div class="row" style="margin:6px 0 0"><button type="button" class="btn-primary m-save-btn" data-savemh="' + esc(hName) + '" style="padding:9px 12px;font-size:12px">Save Market Rules</button></div></div></div>';
     }).join("");
   }
 
@@ -2762,6 +2735,10 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 
   $("openMenu").onclick = openDrawer; $("closeMenu").onclick = closeDrawer; $("drawerBackdrop").onclick = closeDrawer;
   $("toggleSlidesManager").onclick = function(){ $("resultAdminPanel").classList.toggle("hide"); };
+  if ($("toggleHisabResults")) $("toggleHisabResults").onclick = function() {
+    var panel = $("hisabResultsList"), opening = panel.classList.contains("hide");
+    panel.classList.toggle("hide", !opening); this.setAttribute("aria-expanded", opening ? "true" : "false");
+  };
   $("toggleLinkSettings").onclick = function(){ $("linkSettingsPanel").classList.toggle("hide"); $("headerLinkInput").value=headerLinkUrl; };
   $("saveHeaderLinkBtn").onclick = function(){ if(!isAdmin())return; var v=$("headerLinkInput").value.trim(); if(v && v.indexOf("https://")!==0 && v.indexOf("http://")!==0){ $("headerLinkMsg").textContent="Use a full https:// or http:// URL."; return; } headerLinkUrl=v; sv("jio_play_header_link_v1",headerLinkUrl); $("quickNewBtn").classList.toggle("hide",!headerLinkUrl); $("headerLinkMsg").textContent="Link saved ✓"; pushMetaToFirebase(); };
   $("logoHome").onclick = function() { switchTab(1); };
@@ -2920,6 +2897,12 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   if ($("mktHeadingsList")) {
     $("mktHeadingsList").onclick = function(e) {
       if (!isAdmin()) return;
+      var toggle = e.target.closest("[data-mtoggle]");
+      if (toggle) {
+        var panel = $("mktHeadingsList").querySelector('[data-mpanel="' + toggle.getAttribute("data-mtoggle") + '"]');
+        if (panel) { var opening = panel.classList.contains("hide"); panel.classList.toggle("hide", !opening); toggle.setAttribute("aria-expanded", opening ? "true" : "false"); }
+        return;
+      }
       var delH = e.target.getAttribute("data-delmhead");
       if (delH && heads.length > 1) {
         heads = heads.filter(function(h) { return h !== delH; }); delete marketConfig[delH];
