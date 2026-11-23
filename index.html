@@ -982,6 +982,93 @@ tr:nth-child(even) td{background:#f7f9fc!important}
   *,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 </style>
+<style id="jio-play-v2-dark-theme">
+/* Premium dark theme + live bulletin component */
+:root{
+ color-scheme:dark;
+ --bg:#080f1d;--fg:#e8f0fc;--mut:#93a6bf;--bd:#24354b;--bd-strong:#344b66;
+ --card:#111e30;--card-solid:#101c2d;--ok:#42d6a0;--err:#ff8496;
+ --warn-bg:#2a2417;--warn-bd:#66502a;
+}
+html,body{background:#080f1d!important;color:#e8f0fc!important}
+body{background:radial-gradient(ellipse at 50% -18%,rgba(21,108,158,.2),transparent 46%),linear-gradient(180deg,#080f1d,#0b1423)!important;color:#e8f0fc!important}
+.site-shell{background:#101b2b!important;border:1px solid #24364d!important;box-shadow:0 14px 38px rgba(0,0,0,.24)!important}
+header{background:linear-gradient(120deg,#14243a,#102036)!important;border-color:#2a405a!important;box-shadow:0 7px 22px rgba(0,0,0,.2)!important}
+.brand-jio{background:linear-gradient(120deg,#38bdf8,#67e8f9)!important;-webkit-background-clip:text!important;background-clip:text!important}
+.brand-play{background:linear-gradient(120deg,#dbeafe,#91b8e7)!important;-webkit-background-clip:text!important;background-clip:text!important}
+.session-bar,.head-box,.input-box,.breakdown-card,.stat-group,.chart-card,.bt-box{background:#111f32!important;border-color:#293e57!important;color:#e8f0fc!important}
+.user-badge,.stat-head b,.load-filter-label,.line,.hisab-line-item{color:#dce8f7!important}
+.drawer{background:#101c2d!important;border-color:#30445e!important}
+.drawer-top{background:linear-gradient(135deg,#152a43,#1c3554)!important;border-color:#35516f!important}
+.nav-item{background:#17283d!important;color:#d8e5f5!important;border-color:#2b4059!important}
+.nav-item.on{background:linear-gradient(110deg,#087fc1,#126b9b)!important;color:#fff!important}
+select,input,button,textarea{background:#0b1728!important;color:#e6effb!important;border-color:#30445e!important}
+input::placeholder,textarea::placeholder{color:#8498b2!important}
+button.btn-primary,button.btn-add-entry,button.btn-bt,button.btn-copy,button.btn-gen{background:linear-gradient(115deg,#087fc1,#168bb8)!important;color:#fff!important;border-color:#2398c8!important}
+button.btn-new-head,button.btn-share{background:#123b32!important;color:#8de6bf!important;border-color:#27664f!important}
+button.btn-clear{background:#1c2a3e!important;color:#c4d2e4!important;border-color:#34475f!important}
+button.btn-print{background:#182e49!important;color:#9fc9f3!important;border-color:#345678!important}
+button.danger,.logout-mini{background:#3b1e2b!important;color:#ff9aaa!important;border-color:#713348!important}
+#inp{background:#0b1728!important;color:#e8f0fc!important;border-color:#30445e!important}
+#list,.h,.user-row,.mult-box,.hisab-slip-pre,.hisab-line-item,.verify-card,.load-num-tile{background:#14243a!important;color:#dce8f7!important;border-color:#2b4059!important}
+.b-item{background:#172a42!important;color:#c8d8eb!important}
+.b-item span:last-child{color:#6bd5f4!important}
+.tot,.grand-box{background:linear-gradient(110deg,#075b91,#087fae)!important;color:white!important}
+.stat-head{border-bottom-color:#2a4059!important}
+.stat-head span,.chart-rs,.load-num-rs{color:#f4c66d!important}
+.mode-chip-btn{background:#182b43!important;color:#b9cbe0!important;border-color:#304862!important}
+.mode-chip-btn.active{background:#123b56!important;color:#7bdcff!important;border-color:#247da7!important}
+.chart-bar{background:#425b78!important}
+.chart-bar.hot{background:linear-gradient(180deg,#f2b84b,#d8894c)!important}
+.chart-bar.mid{background:linear-gradient(180deg,#36c4db,#287fc2)!important}
+.gold-pill-banner{background:#332b19!important;color:#f4d17f!important;border-color:#705a2d!important}
+.paused-banner,.note-box{background:#332b19!important;color:#f4d17f!important;border-color:#705a2d!important}
+.tag{background:#183852!important;color:#8bdcff!important}
+#slip{background:#fff!important;color:#111827!important;border-color:#9aaabd!important}
+#slip hr{border-top-color:#9aaabd!important}
+table th{background:#19314c!important;color:#d9edff!important}
+table td{color:#d9e5f4!important;border-color:#2a4059!important}
+tr:nth-child(even) td{background:#14243a!important}
+a{color:#65c9f0!important}
+.bulletin-shell{
+ background:linear-gradient(135deg,#14243a,#101c2d)!important;
+ border:1px solid #304761!important;border-radius:16px!important;
+ padding:9px!important;margin:0 0 11px!important;
+ box-shadow:0 7px 20px rgba(0,0,0,.18)!important;min-width:0;
+}
+.bulletin-main{display:flex;align-items:center;gap:9px;min-width:0}
+.bulletin-badge{
+ flex:0 0 auto;padding:7px 10px;border-radius:999px;font-size:10px;
+ line-height:1;font-weight:900;letter-spacing:.055em;white-space:nowrap;
+}
+.bulletin-badge.live{background:#123d31;color:#75e5b4;border:1px solid #247454}
+.bulletin-badge.ad{background:#493718;color:#ffd477;border:1px solid #80612b}
+.bulletin-window{min-width:0;flex:1;overflow:hidden;white-space:nowrap;position:relative}
+.bulletin-track{display:inline-flex;min-width:max-content;animation:bulletin-scroll 24s linear infinite}
+.bulletin-track span{display:inline-block;padding-left:100%;font-size:13px;font-weight:700;color:#e2edf9;letter-spacing:.01em}
+.bulletin-track.paused{animation:none;min-width:0}
+.bulletin-track.paused span{padding-left:0}
+@keyframes bulletin-scroll{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}
+.bulletin-admin-controls{
+ display:grid;grid-template-columns:auto minmax(112px,.65fr) minmax(120px,1fr) auto;
+ align-items:center;gap:7px;margin-top:9px;padding-top:9px;border-top:1px solid #2b4059;
+}
+.bulletin-admin-controls label{font-size:11px;font-weight:800;color:#9eb2ca}
+.bulletin-admin-controls select,.bulletin-admin-controls input{min-width:0;width:100%;padding:8px 9px;font-size:12px!important;border-radius:9px!important}
+.bulletin-save-btn{padding:8px 11px!important;border-radius:9px!important;background:#16466a!important;color:#b9eaff!important;border:1px solid #286c96!important;font-size:11px!important;white-space:nowrap}
+@media(max-width:600px){
+ .bulletin-shell{padding:8px!important}
+ .bulletin-main{gap:7px}
+ .bulletin-badge{font-size:9px;padding:7px 8px}
+ .bulletin-track span{font-size:12px}
+ .logout-mini{padding:7px 9px!important;font-size:10px!important}
+ .bulletin-admin-controls{grid-template-columns:1fr 1fr}
+ .bulletin-admin-controls label{grid-column:1/-1}
+ .bulletin-admin-controls input{grid-column:1/-1}
+ .bulletin-save-btn{grid-column:1/-1}
+}
+@media(prefers-reduced-motion:reduce){.bulletin-track{animation:none!important}.bulletin-track span{padding-left:0}}
+</style>
 
 </head>
 <body>
@@ -1069,14 +1156,23 @@ tr:nth-child(even) td{background:#f7f9fc!important}
     </button>
   </header>
 
-  <div class="session-bar">
-    <div class="user-badge">
-      <span id="activeUserLabel">USER</span>
-      <span id="activeRoleBadge" class="role-chip">USER</span>
-      <span id="activeStatusBadge" class="status-chip active">ACTIVE</span>
-      <span id="cloudBadge" style="font-size:11px;color:var(--mut)">Local</span>
+  <div class="bulletin-shell">
+    <div class="bulletin-main">
+      <span id="bulletinBadge" class="bulletin-badge live">LIVE RESULTS</span>
+      <div class="bulletin-window" aria-live="polite" aria-atomic="true">
+        <div id="bulletinTrack" class="bulletin-track"><span id="bulletinText">Waiting for published results…</span></div>
+      </div>
+      <button type="button" id="logoutBtn" class="logout-mini admin-only">LOGOUT</button>
     </div>
-    <button type="button" id="logoutBtn" class="logout-mini">Logout</button>
+    <div id="bulletinAdminControls" class="bulletin-admin-controls admin-only">
+      <label for="bulletinModeSelect">Bulletin mode</label>
+      <select id="bulletinModeSelect" aria-label="Bulletin mode">
+        <option value="live">Live Results</option>
+        <option value="ad">Advertisement</option>
+      </select>
+      <input id="bulletinAdInput" type="text" maxlength="180" placeholder="Enter advertisement message">
+      <button type="button" id="bulletinSaveBtn" class="bulletin-save-btn">Save Bulletin</button>
+    </div>
   </div>
 
   <!-- TAB 1: NEW SLIP -->
@@ -1574,6 +1670,9 @@ tr:nth-child(even) td{background:#f7f9fc!important}
   sv("jio_play_users_v24", users);
   var savedResults = ld("jio_play_results_v38", {});
   if (!savedResults || typeof savedResults !== "object") savedResults = {};
+  var bulletinMode = ld("jio_play_bulletin_mode_v1", "live");
+  if (bulletinMode !== "live" && bulletinMode !== "ad") bulletinMode = "live";
+  var bulletinAdText = String(ld("jio_play_bulletin_ad_v1", "Your advertisement message will appear here.")).slice(0, 180);
   var marketConfig = normalizeMarketConfig(ld("jio_play_market_v39", {}), heads);
   sv("jio_play_market_v39", marketConfig);
   var currentUser = null;
@@ -1734,7 +1833,7 @@ tr:nth-child(even) td{background:#f7f9fc!important}
     try {
       await fetch(base + "/jio_play_v24/meta.json", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ heads: heads, users: users, savedResults: savedResults, marketConfig: marketConfig, slipCounter: slipCounter, updatedAt: Date.now() })
+        body: JSON.stringify({ heads: heads, users: users, savedResults: savedResults, marketConfig: marketConfig, bulletin: { mode: bulletinMode, adText: bulletinAdText }, slipCounter: slipCounter, updatedAt: Date.now() })
       });
       updateCloudBadge("Cloud Synced", true);
     } catch (e) { updateCloudBadge("Cloud Offline", false); }
@@ -1768,6 +1867,12 @@ tr:nth-child(even) td{background:#f7f9fc!important}
           sv("jio_play_users_v24", users); renderUserList();
         }
         if (meta.savedResults && typeof meta.savedResults === "object") { savedResults = meta.savedResults; sv("jio_play_results_v38", savedResults); }
+        if (meta.bulletin && typeof meta.bulletin === "object") {
+          bulletinMode = meta.bulletin.mode === "ad" ? "ad" : "live";
+          bulletinAdText = String(meta.bulletin.adText || "").slice(0, 180);
+          sv("jio_play_bulletin_mode_v1", bulletinMode);
+          sv("jio_play_bulletin_ad_v1", bulletinAdText);
+        }
         if (meta.marketConfig && typeof meta.marketConfig === "object") { marketConfig = normalizeMarketConfig(meta.marketConfig, heads); sv("jio_play_market_v39", marketConfig); }
         fillHeads();
         var cloudSlips = [];
@@ -1793,13 +1898,10 @@ tr:nth-child(even) td{background:#f7f9fc!important}
     if ($("vRunBtn")) $("vRunBtn").textContent = admin ? "Verify Entries" : "Verify My Entries";
     var rec = refreshCurrentUserRecord();
     var st = admin ? "active" : (rec ? rec.status : "active");
-    $("activeUserLabel").textContent = currentUser ? currentUser.id : "GUEST";
-    var roleBadge = $("activeRoleBadge");
-    roleBadge.textContent = admin ? "ADMIN" : "USER";
-    roleBadge.className = admin ? "role-chip admin" : "role-chip";
-    var statusBadge = $("activeStatusBadge");
-    statusBadge.textContent = st.toUpperCase();
-    statusBadge.className = "status-chip " + st;
+    if ($("logoutBtn")) $("logoutBtn").classList.toggle("hide", !admin);
+    if ($("bulletinModeSelect")) $("bulletinModeSelect").value = bulletinMode;
+    if ($("bulletinAdInput")) $("bulletinAdInput").value = bulletinAdText;
+    renderBulletin();
     var isPaused = !admin && st === "paused";
     if ($("userSlipLockBanner")) $("userSlipLockBanner").classList.toggle("hide", !isPaused);
     if ($("gen")) $("gen").disabled = isPaused;
@@ -1829,6 +1931,8 @@ tr:nth-child(even) td{background:#f7f9fc!important}
   if ($("loginBtn")) $("loginBtn").addEventListener("click", attemptLogin);
   if ($("loginPass")) $("loginPass").addEventListener("keydown", function(e) { if (e.key === "Enter") attemptLogin(); });
   if ($("logoutBtn")) $("logoutBtn").addEventListener("click", showLogin);
+  if ($("bulletinModeSelect")) $("bulletinModeSelect").addEventListener("change", function() { saveBulletinSettings(); });
+  if ($("bulletinSaveBtn")) $("bulletinSaveBtn").addEventListener("click", saveBulletinSettings);
 
   function updateSessionUI() {
     sessionMode = $("sessionSel").value || "OPEN";
@@ -2251,6 +2355,39 @@ tr:nth-child(even) td{background:#f7f9fc!important}
     var pub = getActiveDayPublishedResult(hName);
     $("vPublishedResultText").textContent = pub ? pub.raw : "Not Published Yet";
     if (isAdmin() && $("vResultInput") && pub && !$("vResultInput").value) $("vResultInput").value = pub.raw;
+    renderBulletin();
+  }
+  function renderBulletin() {
+    var badge = $("bulletinBadge"), text = $("bulletinText"), track = $("bulletinTrack");
+    if (!badge || !text || !track) return;
+    if (bulletinMode === "ad") {
+      badge.textContent = "ADVERTISEMENT";
+      badge.className = "bulletin-badge ad";
+      text.textContent = bulletinAdText || "Advertisement";
+    } else {
+      badge.textContent = "LIVE RESULTS";
+      badge.className = "bulletin-badge live";
+      var dayKey = getHisabDayInfo(Date.now()).key;
+      var dayResults = savedResults[dayKey] || {};
+      var messages = Object.keys(dayResults).filter(function(h) { return dayResults[h] && dayResults[h].raw; })
+        .map(function(h) { return h + " : " + dayResults[h].raw; });
+      text.textContent = messages.length ? messages.join("     •     ") : "Waiting for Admin to publish today's results…";
+    }
+    track.classList.toggle("paused", !text.textContent || text.textContent.length < 34);
+  }
+  function saveBulletinSettings() {
+    if (!isAdmin()) return;
+    bulletinMode = $("bulletinModeSelect") && $("bulletinModeSelect").value === "ad" ? "ad" : "live";
+    bulletinAdText = String($("bulletinAdInput") ? $("bulletinAdInput").value : bulletinAdText).trim().slice(0, 180);
+    sv("jio_play_bulletin_mode_v1", bulletinMode);
+    sv("jio_play_bulletin_ad_v1", bulletinAdText);
+    renderBulletin();
+    pushMetaToFirebase();
+    if ($("bulletinSaveBtn")) {
+      var btn = $("bulletinSaveBtn"), old = btn.textContent;
+      btn.textContent = "Saved ✓";
+      setTimeout(function(){btn.textContent=old;},1500);
+    }
   }
   function runResultVerification() {
     var hName = $("vHead").value, uScope = isAdmin() && $("vUserScope") ? $("vUserScope").value : currentUser.id, pubRes = getActiveDayPublishedResult(hName);
