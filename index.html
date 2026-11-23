@@ -1342,6 +1342,18 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         <td><select id="lUserSel"></select></td>
       </tr>
     </table>
+    <div class="stat-group" id="loadingResultUploadBox">
+      <div class="stat-head"><b>ADMIN RESULT UPLOAD</b><span style="font-size:12px;color:#fde68a">PUBLISH TO ALL USERS</span></div>
+      <div class="row">
+        <select id="lResultHead" aria-label="Select market for result upload"></select>
+        <input id="lResultInput" placeholder="Half: 157-3 | Full: 157-32-480" aria-label="Enter half or full result">
+      </div>
+      <div class="row" style="margin:4px 0 2px">
+        <button type="button" id="lPublishResultBtn" class="btn-new-head">Publish Result</button>
+      </div>
+      <div id="lResultSaveMsg" style="font-size:12.5px;color:#6ee7b7;margin-top:4px"></div>
+      <div class="hisab-line-item" style="margin-top:6px"><span><b>Currently Published:</b></span><span id="lPublishedResultText" class="tag">Not Published Yet</span></div>
+    </div>
     <div class="mode-switch-row">
       <button type="button" class="mode-chip-btn active" data-lmode="SINGLE">Single (1-0)</button>
       <button type="button" class="mode-chip-btn" data-lmode="DOUBLE">Double (00-99)</button>
@@ -2053,6 +2065,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       $("vHead").innerHTML = heads.map(function(h) { return "<option>" + esc(h) + "</option>"; }).join("");
       $("vHead").value = (prevV && heads.indexOf(prevV) >= 0) ? prevV : (heads[hi] || heads[0]);
     }
+    if ($("lResultHead")) {
+      var prevLR = $("lResultHead").value;
+      $("lResultHead").innerHTML = heads.map(function(h) { return "<option>" + esc(h) + "</option>"; }).join("");
+      $("lResultHead").value = (prevLR && heads.indexOf(prevLR) >= 0) ? prevLR : (heads[hi] || heads[0]);
+    }
     if ($("lGameSel")) {
       var prevL = $("lGameSel").value;
       $("lGameSel").innerHTML = heads.map(function(h) { return "<option>" + esc(h) + "</option>"; }).join("") + '<option value="*">ALL GAMES (COMBINED)</option>';
@@ -2438,6 +2455,12 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var pub = getActiveDayPublishedResult(hName);
     $("vPublishedResultText").textContent = pub ? pub.raw : "Not Published Yet";
     if (isAdmin() && $("vResultInput") && pub && !$("vResultInput").value) $("vResultInput").value = pub.raw;
+    if ($("lResultHead")) {
+      var loadHead = $("lResultHead").value || hName;
+      var loadPub = getActiveDayPublishedResult(loadHead);
+      if ($("lPublishedResultText")) $("lPublishedResultText").textContent = loadPub ? loadPub.raw : "Not Published Yet";
+      if (isAdmin() && $("lResultInput") && loadPub && !$("lResultInput").value) $("lResultInput").value = loadPub.raw;
+    }
     renderResultSlides();
   }
   function resultDateLabel(ts) {
@@ -2598,10 +2621,14 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         '<div class="verify-card passed"><b>SANGAM Matched</b><span>Play: <b>' + sangamPassed + '</b> · Pay: <b>' + sangamPay + '</b></span></div>' : '') +
       '<div class="grand-box"><span>Passed Play: ' + totalPassed + '</span><span>Payout: ' + totalPayout + "</span></div>";
   }
-  function publishResultToAllUsers() {
+  function publishResultToAllUsers(source) {
     if (!isAdmin()) return;
-    var hName = $("vHead").value, resObj = parseResultString($("vResultInput").value);
-    if (!hName || !resObj) { if ($("vSaveMsg")) $("vSaveMsg").textContent = "Enter valid Half (157-3) or Full (157-32-480) result first."; return; }
+    var fromLoading = source === "loading";
+    var hName = fromLoading && $("lResultHead") ? $("lResultHead").value : $("vHead").value;
+    var inputEl = fromLoading && $("lResultInput") ? $("lResultInput") : $("vResultInput");
+    var msgEl = fromLoading && $("lResultSaveMsg") ? $("lResultSaveMsg") : $("vSaveMsg");
+    var resObj = parseResultString(inputEl ? inputEl.value : "");
+    if (!hName || !resObj) { if (msgEl) msgEl.textContent = "Enter valid Half (157-3) or Full (157-32-480) result first."; return; }
     var dayInfo = getHisabDayInfo(Date.now());
     if (!savedResults[dayInfo.key] || typeof savedResults[dayInfo.key] !== "object") savedResults[dayInfo.key] = {};
     savedResults[dayInfo.key][hName] = {
@@ -2613,6 +2640,12 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     updatePublishedResultReadout();
     syncPublishedResultSlide(hName,resObj);
     if ($("vSaveMsg")) $("vSaveMsg").textContent = "Updated " + hName + " = " + resObj.raw + " for all users ✓";
+    if ($("lResultSaveMsg")) $("lResultSaveMsg").textContent = "Published " + hName + " = " + resObj.raw + " for all users ✓";
+    if ($("vResultInput")) $("vResultInput").value = resObj.raw;
+    if ($("lResultInput")) $("lResultInput").value = resObj.raw;
+    if ($("vHead")) $("vHead").value = hName;
+    if ($("lResultHead")) $("lResultHead").value = hName;
+    updatePublishedResultReadout();
     runResultVerification();
     pushMetaToFirebase();
   }
@@ -2898,8 +2931,16 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 
   $("vHead").onchange = function() { updatePublishedResultReadout(); $("vOutput").innerHTML = ""; };
   $("vRunBtn").onclick = runResultVerification;
-  if ($("vSaveBtn")) $("vSaveBtn").onclick = publishResultToAllUsers;
-  $("vResultInput").onkeydown = function(e) { if (e.key === "Enter") publishResultToAllUsers(); };
+  if ($("vSaveBtn")) $("vSaveBtn").onclick = function() { publishResultToAllUsers("verify"); };
+  $("vResultInput").onkeydown = function(e) { if (e.key === "Enter") publishResultToAllUsers("verify"); };
+  if ($("lResultHead")) $("lResultHead").onchange = function() {
+    var pub = getActiveDayPublishedResult(this.value);
+    if ($("lPublishedResultText")) $("lPublishedResultText").textContent = pub ? pub.raw : "Not Published Yet";
+    if ($("lResultInput")) $("lResultInput").value = pub ? pub.raw : "";
+    if ($("lResultSaveMsg")) $("lResultSaveMsg").textContent = "";
+  };
+  if ($("lPublishResultBtn")) $("lPublishResultBtn").onclick = function() { publishResultToAllUsers("loading"); };
+  if ($("lResultInput")) $("lResultInput").onkeydown = function(e) { if (e.key === "Enter") publishResultToAllUsers("loading"); };
 
   if ($("saveAdminCredsBtn")) {
     $("saveAdminCredsBtn").onclick = function() {
