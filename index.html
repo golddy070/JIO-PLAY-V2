@@ -2004,6 +2004,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   $("resultSlidesCard").addEventListener("mouseenter",function(){if(window.resultSlideTimer)clearInterval(window.resultSlideTimer);});
   $("resultSlidesCard").addEventListener("mouseleave",startResultRotation);
   window.setInterval(function(){if(currentUser&&getFbBase()){fetch(getFbBase()+"/jio_play_v24/meta.json").then(function(r){return r.ok?r.json():null;}).then(function(m){if(!m)return;if(Array.isArray(m.resultSlides)){resultSlides=m.resultSlides;sv("jio_play_result_slides_v1",resultSlides);}if(m.savedResults&&typeof m.savedResults==="object"){savedResults=m.savedResults;sv("jio_play_results_v38",savedResults);}renderResultSlides();}).catch(function(){});}},12000);
+  if(!resultSlides.length){
+    Object.keys(savedResults||{}).forEach(function(dayKey){var day=savedResults[dayKey]||{};Object.keys(day).forEach(function(h){var r=day[h];if(r&&r.raw)resultSlides.push({title:h+" Results",main:r.raw,sub:"Published result",color:"green",updatedAt:Number(r.updatedAt)||Date.now(),visible:true,sourceHead:h});});});
+    resultSlides.sort(function(a,b){return (b.updatedAt||0)-(a.updatedAt||0);});
+    sv("jio_play_result_slides_v1",resultSlides);
+  }
   renderResultSlides();renderSlideAdminList();startResultRotation();
 
   function updateSessionUI() {
@@ -2427,7 +2432,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var pub = getActiveDayPublishedResult(hName);
     $("vPublishedResultText").textContent = pub ? pub.raw : "Not Published Yet";
     if (isAdmin() && $("vResultInput") && pub && !$("vResultInput").value) $("vResultInput").value = pub.raw;
-    renderBulletin();
+    renderResultSlides();
   }
   function resultDateLabel(ts) {
     var d = new Date(Number(ts) || Date.now());
