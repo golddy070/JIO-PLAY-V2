@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <title>JIO PLAY</title>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
@@ -683,6 +683,97 @@ button.danger { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); c
   #slipwrap .no { display: none !important; }
   #slip { border: 0; margin: 0; padding: 2px; width: 58mm; }
 }
+
+/* === GLOBAL MOBILE OVERFLOW & CONTAINER SAFETY === */
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+html, body {
+  width: 100%;
+  max-width: 100vw;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+body {
+  min-width: 0;
+  overflow-x: clip;
+  overflow-wrap: anywhere;
+}
+.site-shell {
+  width: 100%;
+  max-width: 540px;
+  margin: 12px auto;
+  padding: 12px;
+}
+#app, #login, #slipwrap, main, section, article,
+.site-shell, .head-box, .input-box, .breakdown-card,
+.stat-group, .chart-card, .bt-box, .card, .panel {
+  min-width: 0;
+  max-width: 100%;
+}
+.row, .user-row, .user-row-top, .user-controls-row,
+.session-bar, .verify-card, .h, .hisab-line-item {
+  min-width: 0;
+  max-width: 100%;
+}
+.row > *, .user-row-top > *, .user-controls-row > *,
+.session-bar > *, .verify-card > *, .h > *,
+.hisab-line-item > * {
+  min-width: 0;
+  max-width: 100%;
+}
+input, select, button, textarea {
+  min-width: 0;
+  max-width: 100%;
+}
+input, select, textarea {
+  width: 100%;
+}
+#head, #sessionSel {
+  min-width: 0;
+  max-width: 100%;
+}
+.b-grid, .limit-grid, .load-rank-grid, .mode-switch-row,
+.chart-columns, .chart-digits {
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.chart-columns, .chart-digits {
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+}
+.drawer {
+  width: min(280px, calc(100vw - 20px));
+  max-width: calc(100vw - 20px);
+  min-width: 0;
+}
+#list, .slip-vertical-list, .hisab-slip-pre,
+.stat-vals, .line, .slip-v-item, table {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+img, svg, canvas, video, iframe {
+  max-width: 100%;
+}
+@media (max-width: 600px) {
+  body { padding: 0; }
+  .site-shell {
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    padding: 10px;
+    border-radius: 0 0 20px 20px;
+  }
+  .row { flex-wrap: wrap; }
+  .row > * { flex: 1 1 0; }
+  #head, #sessionSel { flex: 1 1 0; }
+  .b-grid, .limit-grid, .load-rank-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 </style>
 
 <style id="jio-play-v2-design">
