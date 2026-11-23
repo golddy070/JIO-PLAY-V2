@@ -3054,8 +3054,41 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
 
   $("fbUrlInput").value = fbUrl;
-  $("saveFbBtn").onclick = function() { if (!isAdmin()) return; fbUrl = ($("fbUrlInput").value || "").trim(); sv("jio_play_fb_url_v24", fbUrl); if (fbUrl) pullStateFromFirebase(false); };
-  $("pullFbBtn").onclick = function() { if (!isAdmin()) return; pullStateFromFirebase(false); };
+  $("saveFbBtn").onclick = async function() {
+    if (!isAdmin()) return;
+    var btn = $("saveFbBtn"), msg = $("syncMsg");
+    fbUrl = ($("fbUrlInput").value || "").trim().replace(/\/+$/, "");
+    if (!fbUrl || (fbUrl.indexOf("https://") !== 0 && fbUrl.indexOf("http://") !== 0)) { msg.textContent = "Enter a valid Firebase Realtime Database URL."; return; }
+    sv("jio_play_fb_url_v24", fbUrl);
+    btn.disabled = true; msg.textContent = "Connecting to Firebase...";
+    try {
+      var check = await firebaseFetch(fbUrl + "/.json");
+      var cloudData = await check.json();
+      if (cloudData === null) {
+        var safeUsers = users.map(function(u) { return { id: u.id, role: u.role, status: u.status, multipliers: u.multipliers }; });
+        await firebaseFetch(fbUrl + "/jio_play_v24/meta.json", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ heads: heads, users: safeUsers, savedResults: savedResults, marketConfig: marketConfig, resultSlides: resultSlides, adminAnnouncement: adminAnnouncement, slideSpeed: slideSpeed, headerLinkUrl: headerLinkUrl, slipCounter: slipCounter, updatedAt: Date.now() })
+        });
+        updateCloudBadge("Cloud Connected", true);
+        msg.textContent = "Firebase connected. Initial data saved to cloud ✓";
+      } else {
+        await pullStateFromFirebase(false);
+        updateCloudBadge("Cloud Connected", true);
+        msg.textContent = "Firebase connected successfully ✓ Cloud data checked.";
+      }
+    } catch (err) {
+      updateCloudBadge("Cloud Error", false);
+      msg.textContent = "Firebase connection failed: " + (err && err.message ? err.message : "Unknown error");
+      console.error("Firebase connect failed", err);
+    } finally { btn.disabled = false; }
+  };
+  $("pullFbBtn").onclick = async function() {
+    if (!isAdmin()) return;
+    $("syncMsg").textContent = "Pulling cloud data...";
+    await pullStateFromFirebase(false);
+    if ($("fbStatusText").textContent.indexOf("Error") === -1) $("syncMsg").textContent = "Cloud data pull completed ✓";
+  };
   $("btPrint").onclick = directBluetoothPrint; $("print").onclick = function() { window.print(); };
   $("copy").onclick = function() { if (curSlip) copyTextReliable(formatSlipText(curSlip), this, "Copy Slip"); };
   $("shareBtn").onclick = function() { if (!curSlip) return; var t = formatSlipText(curSlip); if (navigator.share) navigator.share({ title: curSlip.head, text: t }).catch(function() {}); else copyTextReliable(t, this, "Share"); };
