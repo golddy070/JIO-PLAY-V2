@@ -1112,6 +1112,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 @media(max-width:600px){.result-slides-card{padding:11px!important}.result-slide-content{min-height:92px}.result-slide-footer>span{font-size:9px}.result-admin-panel{padding:10px}}
 @media(prefers-reduced-motion:no-preference){.result-slide-content{animation:resultFade .28s ease}@keyframes resultFade{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
 </style>
+<style id="jio-play-user-request-fixes">#quickNewBtn{background:linear-gradient(135deg,#126b9b,#087fae)!important;border:1px solid #318db5!important;color:#e9f7ff!important}.result-admin-panel{margin:7px 0 10px!important}#toggleSlidesManager,#toggleLinkSettings{margin-bottom:5px}</style>
 </head>
 <body>
 <div id="loginGate" class="site-shell">
@@ -1137,16 +1138,15 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   <div class="stat-group">
     <div class="stat-head"><b>User / Admin Login</b><span style="font-size:12px;color:#c4b5fd">v39</span></div>
     <div class="row">
-      <input id="loginId" placeholder="User ID (e.g. admin)" value="admin" autocomplete="username">
+      <input id="loginId" placeholder="User ID (e.g. admin)" value="" autocomplete="username">
     </div>
     <div class="row">
-      <input id="loginPass" type="password" placeholder="Password" value="1234" autocomplete="current-password">
+      <input id="loginPass" type="password" placeholder="Password" value="" autocomplete="current-password">
     </div>
     <div id="loginErr" class="hide" style="color:var(--err);font-size:13px;margin:6px 0"></div>
     <div class="row">
       <button type="button" id="loginBtn" class="btn-add-entry">Login to JIO PLAY</button>
     </div>
-    <div class="bt-status">Default Admin: <b>admin</b> / <b>1234</b></div>
   </div>
 </div>
 
@@ -1159,16 +1159,14 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     </div>
     <button type="button" id="closeMenu" class="drawer-close" aria-label="Close Menu">&#10005;</button>
   </div>
-  <div id="resultAdminPanel" class="result-admin-panel admin-only">
+  <button type="button" id="toggleSlidesManager" class="nav-item admin-only"><span>Result Slides Manager</span><span class="nav-pill">+</span></button>
+  <div id="resultAdminPanel" class="result-admin-panel admin-only hide">
     <div class="result-admin-title">Result Slides Manager</div>
     <div class="result-admin-form">
       <input id="slideTitleInput" maxlength="70" placeholder="Result title / exam name">
       <input id="slideMainInput" maxlength="90" placeholder="Main stat / status">
       <input id="slideSubInput" maxlength="110" placeholder="Sub-metric / extra detail">
-      <div class="result-admin-row">
-        <select id="slideColorInput" aria-label="Status color"><option value="blue">Blue</option><option value="green">Green</option><option value="gold">Gold</option><option value="red">Red</option></select>
-        <input id="slideTimeInput" type="datetime-local" aria-label="Update timestamp">
-      </div>
+      <input id="slideTimeInput" type="datetime-local" aria-label="Update timestamp">
       <div class="result-admin-row">
         <button type="button" id="slideAddBtn" class="btn-primary">Add Slide</button>
         <button type="button" id="slideCancelBtn" class="btn-clear hide">Cancel Edit</button>
@@ -1180,6 +1178,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     <button type="button" id="slideSaveBtn" class="btn-primary" style="width:100%;margin-top:9px">Save Changes</button>
     <div id="slideAdminMsg" class="bt-status" aria-live="polite"></div>
   </div>
+  <button type="button" id="toggleLinkSettings" class="nav-item admin-only"><span>Link Settings</span><span class="nav-pill">↗</span></button>
+  <div id="linkSettingsPanel" class="result-admin-panel admin-only hide"><div class="result-admin-title">Header Link</div><input id="headerLinkInput" type="url" placeholder="Paste destination URL (https://...)"><button type="button" id="saveHeaderLinkBtn" class="btn-primary" style="width:100%;margin-top:8px">Save Link</button><div id="headerLinkMsg" class="bt-status" aria-live="polite"></div></div>
   <button type="button" id="t1" class="nav-item on"><span>New Slip</span></button>
   <button type="button" id="t2" class="nav-item"><span>History</span><span class="nav-pill" id="hc">0</span></button>
   <button type="button" id="t3" class="nav-item"><span>Data</span></button>
@@ -1213,16 +1213,12 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         <circle cx="56" cy="2.3" r="2.2" fill="#fbbf24"/>
       </svg>
     </div>
-    <button type="button" id="quickNewBtn" class="home-dot-btn" title="New Slip" aria-label="New Slip">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <polygon points="5 3 19 12 5 21 5 3" fill="rgba(255,255,255,0.22)"/>
-      </svg>
-    </button>
+    <button type="button" id="quickNewBtn" class="home-dot-btn hide" title="Open linked page" aria-label="Open linked page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></button>
   </header>
 
+  <div id="desk">
   <section id="resultSlidesCard" class="result-slides-card" aria-label="Latest result updates">
     <div class="result-slide-head">
-      <span class="result-mark" aria-hidden="true">JP</span>
       <div class="result-head-copy"><span class="result-eyebrow">RESULT UPDATES</span><strong id="resultSlideTitle">Latest Results</strong></div>
       <span class="result-live-dot" aria-label="Updated"></span>
     </div>
@@ -1236,7 +1232,6 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   </section>
 
   <!-- TAB 1: NEW SLIP -->
-  <div id="desk">
     <div id="userSlipLockBanner" class="paused-banner hide">
       Slip generation is PAUSED by Admin. You can still view your slips, data, and results.
     </div>
@@ -1700,7 +1695,6 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     return hh * 60 + mm;
   }
   function checkHeadingSessionAvailability(headName, sessName) {
-    if (isAdmin()) return { allowed: true, reason: "Admin bypasses cut-off times" };
     var cfg = marketConfig[headName];
     if (!cfg) return { allowed: true, reason: "" };
     if (cfg.active === false) return { allowed: false, reason: headName + " is currently unavailable for slip generation." };
@@ -1733,6 +1727,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   var resultSlides = ld("jio_play_result_slides_v1", []);
   if (!Array.isArray(resultSlides)) resultSlides = [];
   var slideSpeed = Math.max(4, Math.min(5, Number(ld("jio_play_result_speed_v1", 5)) || 5));
+  var headerLinkUrl = String(ld("jio_play_header_link_v1", "") || "");
   var activeResultSlide = 0, editingResultSlide = -1;
   var marketConfig = normalizeMarketConfig(ld("jio_play_market_v39", {}), heads);
   sv("jio_play_market_v39", marketConfig);
@@ -1894,7 +1889,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     try {
       await fetch(base + "/jio_play_v24/meta.json", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ heads: heads, users: users, savedResults: savedResults, marketConfig: marketConfig, resultSlides: resultSlides, slideSpeed: slideSpeed, slipCounter: slipCounter, updatedAt: Date.now() })
+        body: JSON.stringify({ heads: heads, users: users, savedResults: savedResults, marketConfig: marketConfig, resultSlides: resultSlides, slideSpeed: slideSpeed, headerLinkUrl: headerLinkUrl, slipCounter: slipCounter, updatedAt: Date.now() })
       });
       updateCloudBadge("Cloud Synced", true);
     } catch (e) { updateCloudBadge("Cloud Offline", false); }
@@ -1930,6 +1925,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         if (meta.savedResults && typeof meta.savedResults === "object") { savedResults = meta.savedResults; sv("jio_play_results_v38", savedResults); }
         if (Array.isArray(meta.resultSlides)) { resultSlides = meta.resultSlides; sv("jio_play_result_slides_v1", resultSlides); }
         if (Number(meta.slideSpeed)) { slideSpeed = Math.max(4, Math.min(5, Number(meta.slideSpeed))); sv("jio_play_result_speed_v1", slideSpeed); }
+        if (typeof meta.headerLinkUrl === "string") { headerLinkUrl = meta.headerLinkUrl; sv("jio_play_header_link_v1", headerLinkUrl); }
         if (meta.marketConfig && typeof meta.marketConfig === "object") { marketConfig = normalizeMarketConfig(meta.marketConfig, heads); sv("jio_play_market_v39", marketConfig); }
         fillHeads();
         var cloudSlips = [];
@@ -1958,6 +1954,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     renderResultSlides();
     renderSlideAdminList();
     if ($("slideSpeedInput")) { $("slideSpeedInput").value=String(slideSpeed); $("slideSpeedValue").textContent=slideSpeed+" sec"; }
+    if ($("headerLinkInput")) $("headerLinkInput").value=headerLinkUrl;
+    if ($("quickNewBtn")) $("quickNewBtn").classList.toggle("hide", !(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0));
     var isPaused = !admin && st === "paused";
     if ($("userSlipLockBanner")) $("userSlipLockBanner").classList.toggle("hide", !isPaused);
     if ($("gen")) $("gen").disabled = isPaused;
@@ -2449,8 +2447,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       return;
     }
     if (activeResultSlide >= visible.length) activeResultSlide = 0;
-    var item = visible[activeResultSlide], palette = {blue:["#69c8ef","rgba(22,135,184,.15)"],green:["#55d6a4","rgba(66,214,160,.13)"],gold:["#f0c36d","rgba(240,195,109,.13)"],red:["#ff8798","rgba(255,132,150,.13)"]};
-    var c = palette[item.color] || palette.blue;
+    var item = visible[activeResultSlide], tones = ["#69c8ef","#55d6a4","#f0c36d","#ff8798","#a99bff","#73d5cb"];
+    var toneSeed = String(item.sourceHead || item.title || activeResultSlide).split("").reduce(function(a,ch){return ((a*31)+ch.charCodeAt(0))>>>0;},7);
+    var tone = tones[toneSeed % tones.length], c = [tone,"rgba(22,135,184,.15)"];
     $("resultSlideTitle").textContent = item.title || "Result Update";
     $("resultSlideContent").innerHTML = '<div class="result-main-row" style="--slide-color:'+c[0]+';--slide-soft:'+c[1]+'"><span class="result-status-icon">↗</span><strong class="result-main-stat">'+esc(item.main || "Result Declared")+'</strong></div><div class="result-submetric">'+esc(item.sub || "")+'</div>';
     $("resultSlideTimestamp").textContent = resultDateLabel(item.updatedAt);
@@ -2462,14 +2461,14 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
   function clearSlideForm() {
     ["slideTitleInput","slideMainInput","slideSubInput"].forEach(function(id){$(id).value="";});
-    $("slideColorInput").value="blue"; $("slideTimeInput").value="";
+    $("slideTimeInput").value="";
     editingResultSlide=-1; $("slideAddBtn").textContent="Add Slide"; $("slideCancelBtn").classList.add("hide");
   }
   function saveSlideForm() {
     if (!isAdmin()) return;
     var title=$("slideTitleInput").value.trim(), main=$("slideMainInput").value.trim();
     if(!title || !main){$("slideAdminMsg").textContent="Enter a title and main status.";return;}
-    var item={title:title,main:main,sub:$("slideSubInput").value.trim(),color:$("slideColorInput").value,updatedAt:$("slideTimeInput").value?new Date($("slideTimeInput").value).getTime():Date.now(),visible:true};
+    var item={title:title,main:main,sub:$("slideSubInput").value.trim(),updatedAt:$("slideTimeInput").value?new Date($("slideTimeInput").value).getTime():Date.now(),visible:true};
     if(editingResultSlide>=0){item.visible=resultSlides[editingResultSlide].visible!==false;resultSlides[editingResultSlide]=item;}
     else resultSlides.push(item);
     clearSlideForm();renderSlideAdminList();renderResultSlides();
@@ -2487,8 +2486,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     window.resultSlideTimer=setInterval(function(){var visible=getVisibleResultSlides();if(visible.length>1){activeResultSlide=(activeResultSlide+1)%visible.length;renderResultSlides();}},slideSpeed*1000);
   }
   function syncPublishedResultSlide(hName,resObj) {
-    var title=hName+" Results", idx=resultSlides.findIndex(function(x){return x.sourceHead===hName;});
-    var item={title:title,main:resObj.raw,sub:"Result declared · Updated "+resultDateLabel(Date.now()),color:"green",updatedAt:Date.now(),visible:true,sourceHead:hName};
+    var title=hName, idx=resultSlides.findIndex(function(x){return x.sourceHead===hName;});
+    var item={title:title,main:resObj.raw,sub:"Live result · Updated "+resultDateLabel(Date.now()),updatedAt:Date.now(),visible:true,sourceHead:hName};
     if(idx>=0){item.visible=resultSlides[idx].visible!==false;resultSlides[idx]=item;}else resultSlides.unshift(item);
     sv("jio_play_result_slides_v1",resultSlides);renderSlideAdminList();renderResultSlides();
   }
@@ -2746,7 +2745,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
 
   $("openMenu").onclick = openDrawer; $("closeMenu").onclick = closeDrawer; $("drawerBackdrop").onclick = closeDrawer;
-  $("logoHome").onclick = function() { switchTab(1); }; $("quickNewBtn").onclick = function() { switchTab(1); };
+  $("toggleSlidesManager").onclick = function(){ $("resultAdminPanel").classList.toggle("hide"); };
+  $("toggleLinkSettings").onclick = function(){ $("linkSettingsPanel").classList.toggle("hide"); $("headerLinkInput").value=headerLinkUrl; };
+  $("saveHeaderLinkBtn").onclick = function(){ if(!isAdmin())return; var v=$("headerLinkInput").value.trim(); if(v && v.indexOf("https://")!==0 && v.indexOf("http://")!==0){ $("headerLinkMsg").textContent="Use a full https:// or http:// URL."; return; } headerLinkUrl=v; sv("jio_play_header_link_v1",headerLinkUrl); $("quickNewBtn").classList.toggle("hide",!headerLinkUrl); $("headerLinkMsg").textContent="Link saved ✓"; pushMetaToFirebase(); };
+  $("logoHome").onclick = function() { switchTab(1); };
+  $("quickNewBtn").onclick = function() { if(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0) window.open(headerLinkUrl,"_blank","noopener"); };
   $("t1").onclick = function() { switchTab(1); }; $("t2").onclick = function() { switchTab(2); }; $("t3").onclick = function() { switchTab(3); };
   if ($("t6")) $("t6").onclick = function() { switchTab(6); }; if ($("t7")) $("t7").onclick = function() { switchTab(7); };
   $("t5").onclick = function() { switchTab(5); };
