@@ -1476,13 +1476,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   <!-- TAB 4: SYNC / USERS (ADMIN ONLY) -->
   <div id="sync" class="hide admin-only">
     <div class="stat-group" id="adminCredsBox">
-      <div class="stat-head"><b>Change Admin Login ID &amp; Password</b><span style="font-size:12px;color:#fde68a">BOSS</span></div>
-      <div class="row">
-        <input id="admNewId" placeholder="New Admin ID (e.g. boss)">
-        <input id="admNewPass" type="password" placeholder="New Password">
-        <button type="button" id="saveAdminCredsBtn" class="btn-new-head" style="flex:0 0 auto">Save Admin</button>
-      </div>
-      <div id="admCredsMsg" style="font-size:12.5px;color:var(--ok);margin-top:4px"></div>
+      <div class="stat-head"><b>Secure Admin Account</b><span style="font-size:12px;color:#fde68a">FIREBASE</span></div>
+      <div style="font-size:13px;line-height:1.6;color:var(--mut)">Admin ID: <b>admin</b><br>Login email: <b>golddy070@gmail.com</b><br>Change the Admin password securely in Firebase Authentication. It is never stored in the website database.</div>
     </div>
 
     <div class="stat-group" id="userMgmtBox">
@@ -1557,10 +1552,17 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script>
 (function() {
   "use strict";
-  var DEFAULT_FIREBASE_URL = "";
+  var FIREBASE_CONFIG = { apiKey: "AIzaSyA4wMZrR_IKgWVxHHKUtGVvT7MaVvGzY5M", authDomain: "jio-play-v2.firebaseapp.com", databaseURL: "https://jio-play-v2-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "jio-play-v2", storageBucket: "jio-play-v2.firebasestorage.app", messagingSenderId: "699248757824", appId: "1:699248757824:web:03b25ca63974b4c92c23a5", measurementId: "G-NVZQJ60H2C" };
+  var ADMIN_EMAIL = "golddy070@gmail.com";
+  var ADMIN_FIREBASE_UID = "naNoHwkqFcRmJr9Hd0tYytwQlho2";
+  var firebaseAuth = null;
+  try { if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); firebaseAuth = firebase.auth(); } catch (firebaseInitError) { console.error("Firebase initialization failed", firebaseInitError); }
+  var DEFAULT_FIREBASE_URL = FIREBASE_CONFIG.databaseURL;
   var WARN = "चिट्टी तपासून घेणे नंतर तक्रार चालणार नाही.";
   var DEFAULT_HEADS = [
     "SRIDEVI", "PADMAVATI", "TIME BAZAR", "SOLAPUR DAY", "MILAN DAY",
@@ -1571,7 +1573,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     single: 9, jodi: 90, sp: 150, dp: 300, tp: 500, jk: 1000, sangam: 10000
   };
   var DEFAULT_USERS = [
-    { id: "admin", pass: "1234", role: "admin", status: "active", multipliers: Object.assign({}, DEFAULT_MULTIPLIERS) }
+    { id: "admin", pass: "", role: "admin", status: "active", multipliers: Object.assign({}, DEFAULT_MULTIPLIERS) }
   ];
   var CATS = ["Single digits", "Jodi", "PAANA", "JK", "SANGAM"];
   var SHORT_CATS = ["1-Digit", "Jodi", "PAANA", "JK", "SANGAM"];
@@ -1754,7 +1756,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   if (sessionMode !== "OPEN" && sessionMode !== "CLOSE") sessionMode = "OPEN";
   var rows = ld("jio_play_draft_v24", []);
   if (!Array.isArray(rows)) rows = [];
-  var fbUrl = ld("jio_play_fb_url_v24", DEFAULT_FIREBASE_URL) || "";
+  var fbUrl = ld("jio_play_fb_url_v24", DEFAULT_FIREBASE_URL) || DEFAULT_FIREBASE_URL;
   var curSlip = null, armTimers = {}, activeLoadMode = "SINGLE", selectedDataSlipId = "*", lastLoadSnapshot = null, selectedHisabDayKey = "";
 
   function nextGlobalSlipId(userId) {
@@ -1900,20 +1902,30 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     if ($("cloudBadge")) { $("cloudBadge").textContent = label; $("cloudBadge").style.color = ok ? "#6ee7b7" : "var(--mut)"; }
     if ($("fbStatusText")) { $("fbStatusText").textContent = label; $("fbStatusText").style.color = ok ? "#6ee7b7" : "var(--mut)"; }
   }
+  async function firebaseFetch(path, options) {
+    if (!firebaseAuth || !firebaseAuth.currentUser) throw new Error("Admin must sign in with Firebase first.");
+    if (firebaseAuth.currentUser.uid !== ADMIN_FIREBASE_UID) throw new Error("This Firebase account is not authorized as the JIO PLAY V2 admin.");
+    var token = await firebaseAuth.currentUser.getIdToken();
+    var url = path + (path.indexOf("?") >= 0 ? "&" : "?") + "auth=" + encodeURIComponent(token);
+    var response = await fetch(url, options || {});
+    if (!response.ok) throw new Error("Firebase HTTP " + response.status);
+    return response;
+  }
   async function pushMetaToFirebase() {
     var base = getFbBase(); if (!base) return;
     try {
-      await fetch(base + "/jio_play_v24/meta.json", {
+      var safeUsers = users.map(function(u) { return { id: u.id, role: u.role, status: u.status, multipliers: u.multipliers }; });
+      await firebaseFetch(base + "/jio_play_v24/meta.json", {
         method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ heads: heads, users: users, savedResults: savedResults, marketConfig: marketConfig, resultSlides: resultSlides, adminAnnouncement: adminAnnouncement, slideSpeed: slideSpeed, headerLinkUrl: headerLinkUrl, slipCounter: slipCounter, updatedAt: Date.now() })
+        body: JSON.stringify({ heads: heads, users: safeUsers, savedResults: savedResults, marketConfig: marketConfig, resultSlides: resultSlides, adminAnnouncement: adminAnnouncement, slideSpeed: slideSpeed, headerLinkUrl: headerLinkUrl, slipCounter: slipCounter, updatedAt: Date.now() })
       });
       updateCloudBadge("Cloud Synced", true);
-    } catch (e) { updateCloudBadge("Cloud Offline", false); }
+    } catch (e) { updateCloudBadge("Cloud Offline", false); console.warn(e); }
   }
   async function pushSlipToFirebase(slip) {
     var base = getFbBase(); if (!base || !slip) return;
     try {
-      await fetch(base + "/jio_play_v24/slips/" + encodeURIComponent(ensureSlipKey(slip)) + ".json", {
+      await firebaseFetch(base + "/jio_play_v24/slips/" + encodeURIComponent(ensureSlipKey(slip)) + ".json", {
         method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(slip)
       });
       updateCloudBadge("Cloud Synced", true);
@@ -1921,12 +1933,12 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
   async function deleteSlipFromFirebase(slip) {
     var base = getFbBase(); if (!base || !slip || !slip.cloudKey) return;
-    try { await fetch(base + "/jio_play_v24/slips/" + encodeURIComponent(slip.cloudKey) + ".json", { method: "DELETE" }); } catch (e) {}
+    try { await firebaseFetch(base + "/jio_play_v24/slips/" + encodeURIComponent(slip.cloudKey) + ".json", { method: "DELETE" }); } catch (e) {}
   }
   async function pullStateFromFirebase(silent) {
     var base = getFbBase(); if (!base) { updateCloudBadge("Local Only", false); return; }
     try {
-      var res = await fetch(base + "/jio_play_v24.json");
+      var res = await firebaseFetch(base + "/jio_play_v24.json");
       if (!res.ok) throw new Error("HTTP " + res.status);
       var data = await res.json();
       if (data && typeof data === "object") {
@@ -1987,27 +1999,37 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     applyRolePermissions(); fillHeads(); updateSessionUI(); renderDesk(); renderUserList(); renderMarketTab();
     // Always start with New Slip and hide every other page after login.
     switchTab(1);
-    if (getFbBase()) pullStateFromFirebase(true);
+    if (isAdmin() && getFbBase()) pullStateFromFirebase(true);
   }
   function showLogin() {
     currentUser = null; closeDrawer();
     $("slipwrap").classList.add("hide"); $("app").classList.add("hide"); $("loginGate").classList.remove("hide");
     if ($("loginErr")) $("loginErr").classList.add("hide");
   }
-  function attemptLogin() {
+  async function attemptLogin() {
     var uid = String(($("loginId") ? $("loginId").value : "") || "").trim().toLowerCase();
     var pwd = String(($("loginPass") ? $("loginPass").value : "") || "").trim();
-    var found = users.find(function(u) { return String(u.id || "").trim().toLowerCase() === uid && String(u.pass || "").trim() === pwd; });
-    if (!found) { showLoginStatus("Invalid User ID or Password.", true); return; }
+    if (!uid || !pwd) { showLoginStatus("Enter your User ID and Password.", true); return; }
+    if (uid === "admin") {
+      if (!firebaseAuth) { showLoginStatus("Firebase could not load. Check your internet connection and refresh.", true); return; }
+      showLoginStatus("Verifying secure Admin login...", false);
+      try {
+        var credential = await firebaseAuth.signInWithEmailAndPassword(ADMIN_EMAIL, pwd);
+        if (!credential.user || credential.user.uid !== ADMIN_FIREBASE_UID) { await firebaseAuth.signOut(); showLoginStatus("This account is not the configured JIO PLAY V2 Admin.", true); return; }
+        currentUser = { id: "admin", pass: "", role: "admin", status: "active", multipliers: normalizeMultipliers(DEFAULT_MULTIPLIERS) };
+        enterApp();
+      } catch (authError) { showLoginStatus("Admin login failed. Check the Firebase password and try again.", true); }
+      return;
+    }
+    var found = users.find(function(u) { return String(u.id || "").trim().toLowerCase() === uid && String(u.pass || "").trim() === pwd && u.role !== "admin"; });
+    if (!found) { showLoginStatus("Invalid demo User ID or Password.", true); return; }
     var normU = normalizeUserObj(found);
-    if (normU.role !== "admin" && normU.status === "blocked") { showLoginStatus("Your account is BLOCKED by Admin.", true); return; }
-    currentUser = normU;
-    showLoginStatus("Logging in...", false);
-    enterApp();
+    if (normU.status === "blocked") { showLoginStatus("Your account is BLOCKED by Admin.", true); return; }
+    currentUser = normU; enterApp();
   }
   if ($("loginBtn")) $("loginBtn").addEventListener("click", attemptLogin);
   if ($("loginPass")) $("loginPass").addEventListener("keydown", function(e) { if (e.key === "Enter") attemptLogin(); });
-  if ($("logoutBtn")) $("logoutBtn").addEventListener("click", function(){closeDrawer();showLogin();});
+  if ($("logoutBtn")) $("logoutBtn").addEventListener("click", async function(){closeDrawer();showLogin();if(firebaseAuth){try{await firebaseAuth.signOut();}catch(e){}}});
   $("announcementPublishBtn").addEventListener("click",saveAdminAnnouncement);
   $("announcementHideBtn").addEventListener("click",hideAdminAnnouncement);
   $("announcementDeleteBtn").addEventListener("click",deleteAdminAnnouncement);
@@ -2027,7 +2049,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   $("resultSlideDots").addEventListener("click",function(e){var b=e.target.closest("[data-result-index]");if(b){activeResultSlide=Number(b.getAttribute("data-result-index"));renderResultSlides();}});
   $("resultSlidesCard").addEventListener("mouseenter",function(){if(window.resultSlideTimer)clearInterval(window.resultSlideTimer);});
   $("resultSlidesCard").addEventListener("mouseleave",startResultRotation);
-  window.setInterval(function(){if(currentUser&&getFbBase()){fetch(getFbBase()+"/jio_play_v24/meta.json").then(function(r){return r.ok?r.json():null;}).then(function(m){if(!m)return;if(Array.isArray(m.resultSlides)){resultSlides=m.resultSlides;sv("jio_play_result_slides_v1",resultSlides);}if(m.savedResults&&typeof m.savedResults==="object"){savedResults=m.savedResults;sv("jio_play_results_v38",savedResults);mergeSavedResultsIntoSlides();}renderResultSlides();}).catch(function(){});}},12000);
+  window.setInterval(function(){if(currentUser&&currentUser.role==="admin"&&getFbBase()){firebaseFetch(getFbBase()+"/jio_play_v24/meta.json").then(function(r){return r.json();}).then(function(m){if(!m)return;if(Array.isArray(m.resultSlides)){resultSlides=m.resultSlides;sv("jio_play_result_slides_v1",resultSlides);}if(m.savedResults&&typeof m.savedResults==="object"){savedResults=m.savedResults;sv("jio_play_results_v38",savedResults);mergeSavedResultsIntoSlides();}renderResultSlides();}).catch(function(){});}},12000);
   mergeSavedResultsIntoSlides();
   renderResultSlides();renderSlideAdminList();startResultRotation();
 
@@ -2944,20 +2966,6 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   if ($("lPublishResultBtn")) $("lPublishResultBtn").onclick = function() { publishResultToAllUsers("loading"); };
   if ($("lResultInput")) $("lResultInput").onkeydown = function(e) { if (e.key === "Enter") publishResultToAllUsers("loading"); };
 
-  if ($("saveAdminCredsBtn")) {
-    $("saveAdminCredsBtn").onclick = function() {
-      if (!isAdmin()) return;
-      var nId = ($("admNewId").value || "").trim(), nPass = ($("admNewPass").value || "").trim();
-      if (!nId || !nPass) { if ($("admCredsMsg")) $("admCredsMsg").textContent = "Enter both new Admin ID and Password."; return; }
-      var admIdx = users.findIndex(function(u) { return u.role === "admin"; });
-      if (admIdx >= 0) { users[admIdx].id = nId; users[admIdx].pass = nPass; }
-      else users.unshift(normalizeUserObj({ id: nId, pass: nPass, role: "admin", status: "active" }));
-      currentUser.id = nId; currentUser.pass = nPass; sv("jio_play_users_v24", users);
-      $("admNewId").value = ""; $("admNewPass").value = ""; applyRolePermissions();
-      if ($("admCredsMsg")) $("admCredsMsg").textContent = 'Updated Admin credentials to "' + nId + '" ✓';
-      pushMetaToFirebase();
-    };
-  }
   $("createUserBtn").onclick = function() {
     if (!isAdmin()) return;
     var uid = ($("newUid").value || "").trim(), upwd = ($("newUpwd").value || "").trim();
