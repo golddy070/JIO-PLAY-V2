@@ -1124,7 +1124,13 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 <style id="jio-play-user-request-fixes">#quickNewBtn{background:linear-gradient(135deg,#126b9b,#087fae)!important;border:1px solid #318db5!important;color:#e9f7ff!important}.result-admin-panel{margin:7px 0 10px!important}#toggleSlidesManager,#toggleLinkSettings{margin-bottom:5px}</style>
 </head>
 <body>
-<div id="loginGate" class="site-shell">
+<div id="sessionRestoreSplash" class="site-shell" style="max-width:540px;margin:12px auto;text-align:center;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
+  <div class="brand-wordmark"><span class="brand-jio">JIO</span><span class="brand-play">PLAY</span></div>
+  <div style="font-weight:800;color:#c4b5fd">Restoring secure session...</div>
+  <div aria-label="Loading" style="width:28px;height:28px;border:3px solid rgba(196,181,253,.25);border-top-color:#c084fc;border-radius:50%;animation:jioSessionSpin .8s linear infinite"></div>
+  <style>@keyframes jioSessionSpin{to{transform:rotate(360deg)}}</style>
+</div>
+<div id="loginGate" class="site-shell hide">
   <header style="grid-template-columns:1fr;text-align:center">
     <div class="brand-stage" style="cursor:default">
       <div class="brand-wordmark">
@@ -2024,6 +2030,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
   function enterApp() {
     saveLoginSession(currentUser);
+    if ($("sessionRestoreSplash")) $("sessionRestoreSplash").classList.add("hide");
     $("loginGate").classList.add("hide"); $("app").classList.remove("hide");
     applyRolePermissions(); fillHeads(); updateSessionUI(); renderDesk(); renderUserList(); renderMarketTab();
     // Always start with New Slip and hide every other page after login.
@@ -2032,6 +2039,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
   function showLogin() {
     currentUser = null; closeDrawer();
+    if ($("sessionRestoreSplash")) $("sessionRestoreSplash").classList.add("hide");
     $("slipwrap").classList.add("hide"); $("app").classList.add("hide"); $("loginGate").classList.remove("hide");
     if ($("loginErr")) $("loginErr").classList.add("hide");
   }
