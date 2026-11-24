@@ -1122,7 +1122,17 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 @media(prefers-reduced-motion:no-preference){.result-slide-content{animation:resultFade .28s ease}@keyframes resultFade{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
 #manualRefreshRow{display:flex;align-items:center;gap:8px;margin:0 0 9px;padding:0 2px}#manualRefreshBtn{flex:0 0 auto;padding:8px 12px;font-size:11px;background:linear-gradient(135deg,#126b9b,#087fae);border:1px solid #318db5;color:#e9f7ff}#manualRefreshMsg{font-size:10px;color:#9ca3af;min-width:0;overflow-wrap:anywhere}
 </style>
-<style id="jio-play-user-request-fixes">#quickNewBtn{background:linear-gradient(135deg,#126b9b,#087fae)!important;border:1px solid #318db5!important;color:#e9f7ff!important}.result-admin-panel{margin:7px 0 10px!important}#toggleSlidesManager,#toggleLinkSettings{margin-bottom:5px}</style>
+<style id="jio-play-user-request-fixes">
+.header-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;min-width:0}
+.header-action-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:36px;padding:7px 10px!important;border-radius:11px!important;background:linear-gradient(135deg,#123d5b,#087fae)!important;border:1px solid #318db5!important;color:#e9f7ff!important;font:800 11px Outfit,sans-serif!important;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.18)!important}
+.header-action-btn svg{flex:0 0 auto}
+.header-action-btn:disabled{opacity:.6}
+.header-action-status{min-height:0;text-align:right;padding:0 5px;color:#8fb5ce;font-size:10px;line-height:1.25}
+.update-app-item{margin-top:5px!important;border-color:#27648b!important;background:linear-gradient(110deg,#123d5b,#164b69)!important;color:#d9f3ff!important}
+.update-app-msg{padding:4px 10px;color:#8fb5ce;font-size:10px}
+#quickNewBtn{opacity:1!important}.result-admin-panel{margin:7px 0 10px!important}#toggleSlidesManager,#toggleLinkSettings{margin-bottom:5px}
+@media(max-width:420px){.header-actions{gap:5px}.header-action-btn{min-height:34px;padding:6px 7px!important;font-size:10px!important}.header-action-btn svg{width:15px;height:15px}}
+</style>
 </head>
 <body>
 <div id="sessionRestoreSplash" class="site-shell" style="max-width:540px;margin:12px auto;text-align:center;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
@@ -1206,6 +1216,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   <div id="linkSettingsPanel" class="result-admin-panel admin-only hide"><div class="result-admin-title">Header Link</div><input id="headerLinkInput" type="url" placeholder="Paste destination URL (https://...)"><button type="button" id="saveHeaderLinkBtn" class="btn-primary" style="width:100%;margin-top:8px">Save Link</button><div id="headerLinkMsg" class="bt-status" aria-live="polite"></div></div>
   <button type="button" id="t4" class="nav-item admin-only"><span>10. Sync / Users</span></button>
   <button type="button" id="logoutBtn" class="nav-item"><span>11. Logout</span><span class="nav-pill">↗</span></button>
+  <button type="button" id="updateAppBtn" class="nav-item update-app-item"><span>12. Update App</span><span class="nav-pill">↻</span></button>
+  <div id="updateAppMsg" class="update-app-msg" role="status" aria-live="polite"></div>
 </aside>
 
 <div id="app" class="site-shell hide">
@@ -1230,9 +1242,16 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         <circle cx="56" cy="2.3" r="2.2" fill="#fbbf24"/>
       </svg>
     </div>
-    <button type="button" id="quickNewBtn" class="home-dot-btn hide" title="Open linked page" aria-label="Open linked page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></button>
+    <div class="header-actions" aria-label="Quick actions">
+      <button type="button" id="quickNewBtn" class="header-action-btn" title="Open Admin linked page" aria-label="Open linked page">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg><span>Link</span>
+      </button>
+      <button type="button" id="manualRefreshBtn" class="header-action-btn" title="Refresh latest cloud data" aria-label="Refresh latest cloud data">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M5.6 9A7 7 0 0 1 18 6l2 6M4 12l2 6a7 7 0 0 0 12.4-3"/></svg><span>Refresh</span>
+      </button>
+    </div>
   </header>
-  <div id="manualRefreshRow" aria-label="Cloud refresh controls"><button type="button" id="manualRefreshBtn">↻ Refresh</button><span id="manualRefreshMsg" role="status" aria-live="polite">Refresh latest cloud data</span></div>
+  <div id="manualRefreshMsg" class="header-action-status" role="status" aria-live="polite"></div>
 
   <div id="desk">
   <section id="announcementCard" class="announcement-card hide" aria-label="Admin announcement">
@@ -2011,7 +2030,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     renderSlideAdminList();
     if ($("slideSpeedInput")) { $("slideSpeedInput").value=String(slideSpeed); $("slideSpeedValue").textContent=slideSpeed+" sec"; }
     if ($("headerLinkInput")) $("headerLinkInput").value=headerLinkUrl;
-    if ($("quickNewBtn")) $("quickNewBtn").classList.toggle("hide", !(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0));
+    if ($("quickNewBtn")) $("quickNewBtn").classList.toggle("is-unconfigured", !(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0));
     var isPaused = !admin && st === "paused";
     if ($("userSlipLockBanner")) $("userSlipLockBanner").classList.toggle("hide", !isPaused);
     if ($("gen")) $("gen").disabled = isPaused;
@@ -2146,6 +2165,15 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   if ($("loginBtn")) $("loginBtn").addEventListener("click", attemptLogin);
   if ($("loginPass")) $("loginPass").addEventListener("keydown", function(e) { if (e.key === "Enter") attemptLogin(); });
   if ($("logoutBtn")) $("logoutBtn").addEventListener("click", async function(){closeDrawer();clearLoginSession();showLogin();if(supabaseClient){try{await supabaseClient.auth.signOut();}catch(e){}}});
+  if ($("updateAppBtn")) $("updateAppBtn").addEventListener("click", function(){
+    closeDrawer();
+    var msg = $("updateAppMsg"), btn = this;
+    btn.disabled = true;
+    btn.querySelector("span").textContent = "Checking...";
+    if (msg) msg.textContent = "Checking the latest JIO PLAY version...";
+    var target = window.location.origin + window.location.pathname + "?jio_update=" + Date.now();
+    window.setTimeout(function(){ window.location.replace(target); }, 250);
+  });
   $("announcementPublishBtn").addEventListener("click",saveAdminAnnouncement);
   $("announcementHideBtn").addEventListener("click",hideAdminAnnouncement);
   $("announcementDeleteBtn").addEventListener("click",deleteAdminAnnouncement);
@@ -3037,7 +3065,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     panel.classList.toggle("hide", !opening); this.setAttribute("aria-expanded", opening ? "true" : "false");
   };
   $("toggleLinkSettings").onclick = function(){ $("linkSettingsPanel").classList.toggle("hide"); $("headerLinkInput").value=headerLinkUrl; };
-  $("saveHeaderLinkBtn").onclick = function(){ if(!isAdmin())return; var v=$("headerLinkInput").value.trim(); if(v && v.indexOf("https://")!==0 && v.indexOf("http://")!==0){ $("headerLinkMsg").textContent="Use a full https:// or http:// URL."; return; } headerLinkUrl=v; sv("jio_play_header_link_v1",headerLinkUrl); $("quickNewBtn").classList.toggle("hide",!headerLinkUrl); $("headerLinkMsg").textContent="Link saved ✓"; pushMetaToSupabase(); };
+  $("saveHeaderLinkBtn").onclick = function(){ if(!isAdmin())return; var v=$("headerLinkInput").value.trim(); if(v && v.indexOf("https://")!==0 && v.indexOf("http://")!==0){ $("headerLinkMsg").textContent="Use a full https:// or http:// URL."; return; } headerLinkUrl=v; sv("jio_play_header_link_v1",headerLinkUrl); $("quickNewBtn").classList.toggle("is-unconfigured",!headerLinkUrl); $("headerLinkMsg").textContent="Link saved ✓"; pushMetaToSupabase(); };
   $("manualRefreshBtn").onclick = async function() {
     if (!currentUser || !supabaseClient) { $("manualRefreshMsg").textContent = "Please sign in and check your connection."; return; }
     var btn = this, idle = "↻ Refresh";
@@ -3050,11 +3078,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     } catch (err) {
       $("manualRefreshMsg").textContent = "Refresh failed: " + (err && err.message ? err.message : "Check internet connection.");
     } finally {
-      btn.disabled = false; btn.textContent = idle;
+      btn.disabled = false; btn.querySelector("span").textContent = idle;
     }
   };
   $("logoHome").onclick = function() { switchTab(1); };
-  $("quickNewBtn").onclick = function() { if(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0) window.open(headerLinkUrl,"_blank","noopener"); };
+  $("quickNewBtn").onclick = function() { if(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0) window.open(headerLinkUrl,"_blank","noopener"); else $("manualRefreshMsg").textContent = "Admin has not configured the Link yet."; };
   $("t1").onclick = function() { switchTab(1); }; $("t2").onclick = function() { switchTab(2); }; $("t3").onclick = function() { switchTab(3); };
   if ($("t6")) $("t6").onclick = function() { switchTab(6); }; if ($("t7")) $("t7").onclick = function() { switchTab(7); };
   $("t5").onclick = function() { switchTab(5); };
