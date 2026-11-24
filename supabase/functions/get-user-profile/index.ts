@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const authorization = req.headers.get("Authorization") || "";
-  const token = authorization.replace(/^Bearer\\s+/i, "");
+  const token = authorization.replace(/^Bearer\s+/i, "");
   if (!token) return reply({ success: false, error: "Login required." }, 401);
 
   const admin = createClient(supabaseUrl, serviceRoleKey, {
