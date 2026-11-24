@@ -61,9 +61,20 @@ Deno.serve(async (req: Request) => {
     String(u.role || "user").toLowerCase() !== "admin"
   );
 
-  if (!found) return reply({ success: false, error: "This User ID is not active in JIO PLAY. Contact Admin." }, 404);
+  // Older accounts may exist in Supabase Auth but not yet in the shared
+  // jio_play_state user list. Their app_metadata is written only by the
+  // trusted admin-create-user function, so it is a safe migration fallback.
+  const trustedMeta = authUser.app_metadata || {};
+  const trustedRole = String(trustedMeta.jio_role || "").toLowerCase();
+  const profile = found || (
+    trustedRole === "user" && String(trustedMeta.jio_username || "").toLowerCase() === username
+      ? { id: username, role: "user", status: trustedMeta.jio_status || "active", multipliers: {} }
+      : null
+  );
 
-  const status = String(found.status || "active").toLowerCase();
+  if (!profile) return reply({ success: false, error: "This User ID is not active in JIO PLAY. Contact Admin." }, 404);
+
+  const status = String(profile.status || "active").toLowerCase();
   if (status === "blocked") return reply({ success: false, error: "Your account is BLOCKED by Admin." }, 403);
 
   return reply({
@@ -72,7 +83,7 @@ Deno.serve(async (req: Request) => {
       id: username,
       role: "user",
       status: status === "paused" ? "paused" : "active",
-      multipliers: found.multipliers && typeof found.multipliers === "object" ? found.multipliers : {},
+      multipliers: profile.multipliers && typeof profile.multipliers === "object" ? profile.multipliers : {},
     },
   });
 });
