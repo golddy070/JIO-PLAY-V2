@@ -1,0 +1,6 @@
+{
+  "appId": "com.jioplay.v2",
+  "appName": "JIO PLAY V2",
+  "webDir": "www",
+  "bundledWebRuntime": false
+}
