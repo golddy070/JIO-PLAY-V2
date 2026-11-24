@@ -1133,6 +1133,43 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 #quickNewBtn{opacity:1!important}.result-admin-panel{margin:7px 0 10px!important}#toggleSlidesManager,#toggleLinkSettings{margin-bottom:5px}
 @media(max-width:420px){.header-actions{gap:5px}.header-action-btn{min-height:34px;padding:6px 7px!important;font-size:10px!important}.header-action-btn svg{width:15px;height:15px}}
 </style>
+
+<style id="jio-play-header-actions-layout-fix">
+/* Keep the quick-action buttons in their own grid column on narrow phones. */
+#app > header{
+  grid-template-columns:44px minmax(0,1fr) auto!important;
+  column-gap:8px!important;
+}
+#app > header .brand-stage{min-width:0;overflow:hidden}
+#app > header .brand-wordmark{
+  gap:5px!important;
+  font-size:clamp(18px,5vw,23px)!important;
+  letter-spacing:.07em!important;
+  white-space:nowrap;
+}
+#app > header .brand-ribbon{max-width:82%;height:5px}
+#app > header .header-actions{
+  flex:0 0 auto;
+  gap:5px!important;
+  min-width:max-content;
+}
+#app > header .header-action-btn{
+  min-width:0!important;
+  min-height:34px!important;
+  padding:6px 7px!important;
+  gap:4px!important;
+  font-size:10px!important;
+}
+#app > header .header-action-btn svg{width:14px;height:14px}
+@media(max-width:380px){
+  #app > header{grid-template-columns:38px minmax(0,1fr) auto!important;column-gap:5px!important;padding:8px!important}
+  #app > header .menu-btn{width:36px;height:38px}
+  #app > header .brand-wordmark{font-size:17px!important;gap:3px!important;letter-spacing:.04em!important}
+  #app > header .header-actions{gap:3px!important}
+  #app > header .header-action-btn{padding:5px 5px!important;font-size:9px!important;gap:3px!important}
+}
+</style>
+
 </head>
 <body>
 <div id="sessionRestoreSplash" class="site-shell" style="max-width:540px;margin:12px auto;text-align:center;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">
