@@ -2083,6 +2083,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       currentUser = normalizeUserObj(found);
       enterApp();
     } catch (authError) {
+      try { await supabaseClient.auth.signOut(); } catch (signOutError) {}
       console.warn("User login failed", authError);
       showLoginStatus("Invalid User ID or Password, or cloud connection unavailable.", true);
     }
