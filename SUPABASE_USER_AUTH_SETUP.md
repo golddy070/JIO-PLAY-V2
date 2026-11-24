@@ -45,3 +45,17 @@ The previous demo-only `jack` record can be recreated: the Admin form now asks t
 ## Existing accounts
 
 Old demo accounts were not Supabase Auth accounts. Recreate each one through Admin with a new password of at least 8 characters. Do not reuse the old 4-digit demo password.
+
+## Cross-device user profile lookup
+
+The `get-user-profile` Edge Function securely reads the admin-protected user list and returns only the authenticated user's own profile. This is required because regular users must not receive direct read access to the admin-only `jio_play_state` table.
+
+Deploy it alongside the existing account-creation function:
+
+```bash
+supabase functions deploy get-user-profile
+```
+
+It uses the existing `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` server secrets. Do not expose the service-role key in browser code or GitHub Pages.
+
+After deployment, test a newly created user from a second device. The account must exist in both Supabase Auth and the Admin-managed JIO PLAY user list.
