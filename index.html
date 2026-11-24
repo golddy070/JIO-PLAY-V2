@@ -2045,15 +2045,16 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   }
   async function loadCloudUserList() {
     if (!supabaseClient) throw new Error("Supabase is unavailable.");
-    var sr = await supabaseClient.from("jio_play_state").select("data").eq("id", "main").maybeSingle();
-    if (sr.error) throw sr.error;
-    var cloudData = sr.data && sr.data.data;
-    var meta = cloudData && (cloudData.meta || cloudData);
-    if (meta && Array.isArray(meta.users)) {
-      users = meta.users.map(normalizeUserObj).filter(function(u) { return !!u.id; });
-      if (!users.some(function(u) { return u.role === "admin"; })) users.unshift(normalizeUserObj(DEFAULT_USERS[0]));
-      sv("jio_play_users_v24", users);
+    // Non-admin users cannot read the admin-only jio_play_state table directly.
+    // A server-side Edge Function validates their Auth session and returns only their own profile.
+    var result = await supabaseClient.functions.invoke("get-user-profile", { body: {} });
+    if (result.error || !result.data || !result.data.success || !result.data.user) {
+      var message = result.data && result.data.error;
+      throw new Error(message || (result.error && result.error.message) || "Could not verify your JIO PLAY user account.");
     }
+    var profile = normalizeUserObj(result.data.user);
+    users = [normalizeUserObj(DEFAULT_USERS[0]), profile];
+    sv("jio_play_users_v24", users);
     return users;
   }
   function userAuthEmail(uid) { return String(uid || "").trim().toLowerCase() + "@users.jio-play-v2.invalid"; }
