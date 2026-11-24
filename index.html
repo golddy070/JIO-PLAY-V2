@@ -1974,12 +1974,19 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     } catch (e) { updateCloudBadge("Cloud Offline", false); console.warn("Supabase state save failed", e); }
   }
   async function pushSlipToSupabase(slip) {
-    if (!supabaseClient || !slip) return;
+    if (!supabaseClient || !slip) throw new Error("Cloud connection is unavailable. Slip was saved only on this device.");
     try {
-      var r = await supabaseClient.from("jio_play_slips").upsert({ cloud_key: ensureSlipKey(slip), data: slip }, { onConflict: "cloud_key" });
-      if (r.error) throw r.error;
+      var result = await supabaseClient.functions.invoke("save-user-slip", { body: { slip: slip } });
+      if (result.error || !result.data || !result.data.success) {
+        throw new Error((result.data && result.data.error) || (result.error && result.error.message) || "Cloud slip save failed.");
+      }
       updateCloudBadge("Cloud Synced", true);
-    } catch (e) { updateCloudBadge("Cloud Offline", false); console.warn("Supabase slip save failed", e); }
+      return true;
+    } catch (e) {
+      updateCloudBadge("Cloud Offline", false);
+      console.warn("Secure cloud slip save failed", e);
+      throw e;
+    }
   }
   async function deleteSlipFromSupabase(slip) {
     if (!supabaseClient || !slip || !slip.cloudKey) return;
@@ -3162,7 +3169,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     });
     var expandedRows = getExpandedSlipRows({ rows: compactRows, session: activeSessName }), partTotals = computeFiveTotals(compactRows), total = round2(partTotals.reduce(function(a, b) { return a + b; }, 0)), nowTs = Date.now(), uid = currentUser ? currentUser.id : "admin";
     var slip = { t: nowTs, slipId: nextGlobalSlipId(uid), cloudKey: "slip_" + nowTs + "_" + Math.random().toString(36).slice(2, 8), head: activeHeadName, session: activeSessName, user: uid, rows: compactRows, expandedRows: expandedRows, partTotals: partTotals, total: total };
-    hist.unshift(slip); sv("jio_play_hist_v24", hist); rows = []; renderDesk(); showSlip(slip); pushSlipToSupabase(slip); pushMetaToSupabase();
+    hist.unshift(slip); sv("jio_play_hist_v24", hist); rows = []; renderDesk(); showSlip(slip); pushSlipToSupabase(slip).then(function(){ if ($("btStatus")) $("btStatus").textContent = "Slip saved to cloud ✓"; }).catch(function(saveError){ if ($("btStatus")) $("btStatus").textContent = "Cloud save failed: " + (saveError.message || "Please inform Admin."); }); pushMetaToSupabase();
   };
 
   $("hsearch").oninput = renderHistory; $("hfilter").onchange = renderHistory;
