@@ -1484,7 +1484,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       <div class="stat-head"><b>Users, Status &amp; Multipliers</b><span id="userCountBadge">0</span></div>
       <div class="row">
         <input id="newUid" placeholder="New User ID (e.g. jack)">
-        <input id="newUpwd" placeholder="Password">
+        <input id="newUpwd" type="password" placeholder="Password (8+ characters)" autocomplete="new-password">
         <button type="button" id="createUserBtn" class="btn-new-head" style="flex:0 0 auto">Add User</button>
       </div>
       <div id="userMgmtMsg" style="font-size:12.5px;color:var(--ok);margin-top:4px"></div>
@@ -3090,7 +3090,6 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var uid = ($("newUid").value || "").trim().toLowerCase(), upwd = ($("newUpwd").value || "").trim();
     if (!/^[a-z0-9]{3,20}$/.test(uid)) { $("userMgmtMsg").textContent = "User ID must be 3–20 letters or numbers, with no spaces."; return; }
     if (upwd.length < 8) { $("userMgmtMsg").textContent = "Password must contain at least 8 characters."; return; }
-    if (users.some(function(u) { return u.id.toLowerCase() === uid; })) { $("userMgmtMsg").textContent = "User already exists."; return; }
     if (!supabaseClient) { $("userMgmtMsg").textContent = "Supabase is unavailable."; return; }
     var sessionResult = await supabaseClient.auth.getSession();
     var accessToken = sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
@@ -3099,7 +3098,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     try {
       var created = await supabaseClient.functions.invoke("admin-create-user", { body: { username: uid, password: upwd } });
       if (created.error || !created.data || !created.data.success) throw new Error((created.data && created.data.error) || (created.error && created.error.message) || "Account creation failed.");
-      users.push(normalizeUserObj({ id: uid, role: "user", status: "active", multipliers: DEFAULT_MULTIPLIERS }));
+      var existingIndex = users.findIndex(function(u) { return String(u.id || "").toLowerCase() === uid; });
+      var safeRecord = normalizeUserObj({ id: uid, role: "user", status: "active", multipliers: DEFAULT_MULTIPLIERS });
+      if (existingIndex >= 0) users[existingIndex] = safeRecord; else users.push(safeRecord);
       sv("jio_play_users_v24", users); $("newUid").value = ""; $("newUpwd").value = "";
       await pushMetaToSupabase();
       $("userMgmtMsg").textContent = 'Cloud account "' + uid + '" created ✓';
