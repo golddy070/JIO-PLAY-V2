@@ -1745,7 +1745,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   if (!adminAnnouncement || typeof adminAnnouncement !== "object") adminAnnouncement = { title:"", message:"", active:false, updatedAt:0 };
   var slideSpeed = Math.max(4, Math.min(5, Number(ld("jio_play_result_speed_v1", 5)) || 5));
   var headerLinkUrl = String(ld("jio_play_header_link_v1", "") || "");
-  var activeResultSlide = 0, editingResultSlide = -1;
+  var activeResultSlide = 0, editingResultSlide = -1, resultSlideDayKey = getHisabDayInfo(Date.now()).key;
   var marketConfig = normalizeMarketConfig(ld("jio_play_market_v39", {}), heads);
   sv("jio_play_market_v39", marketConfig);
   var currentUser = null;
@@ -2078,7 +2078,19 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var idx=Number(b.getAttribute("data-slide-edit")||b.getAttribute("data-slide-toggle")||b.getAttribute("data-slide-delete")||b.getAttribute("data-slide-up")||b.getAttribute("data-slide-down"));
     if(b.hasAttribute("data-slide-edit")){var x=resultSlides[idx];$("slideTitleInput").value=x.title||"";$("slideMainInput").value=x.main||"";$("slideSubInput").value=x.sub||"";$("slideTimeInput").value=x.updatedAt?new Date(x.updatedAt-new Date(x.updatedAt).getTimezoneOffset()*60000).toISOString().slice(0,16):"";editingResultSlide=idx;$("slideAddBtn").textContent="Update Slide";$("slideCancelBtn").classList.remove("hide");}
     else if(b.hasAttribute("data-slide-toggle")){resultSlides[idx].visible=resultSlides[idx].visible===false;renderSlideAdminList();renderResultSlides();}
-    else if(b.hasAttribute("data-slide-delete")){resultSlides.splice(idx,1);renderSlideAdminList();renderResultSlides();}
+    else if(b.hasAttribute("data-slide-delete")){
+      var removedSlide=resultSlides[idx];
+      if(removedSlide && removedSlide.sourceHead){
+        var activeKey=getHisabDayInfo(Date.now()).key, resultDay=savedResults[activeKey]||{};
+        Object.keys(resultDay).forEach(function(name){if(resultHeadingKey(name)===resultHeadingKey(removedSlide.sourceHead))delete resultDay[name];});
+        savedResults[activeKey]=resultDay;
+        sv("jio_play_results_v38",savedResults);
+      }
+      resultSlides.splice(idx,1);
+      sv("jio_play_result_slides_v1",resultSlides);
+      renderSlideAdminList();renderResultSlides();pushMetaToSupabase();
+      if($("slideAdminMsg"))$("slideAdminMsg").textContent="Slide deleted and synced ✓";
+    }
     else if(b.hasAttribute("data-slide-up")&&idx>0){var a=resultSlides[idx-1];resultSlides[idx-1]=resultSlides[idx];resultSlides[idx]=a;renderSlideAdminList();}
     else if(b.hasAttribute("data-slide-down")&&idx<resultSlides.length-1){var a=resultSlides[idx+1];resultSlides[idx+1]=resultSlides[idx];resultSlides[idx]=a;renderSlideAdminList();}
   });
@@ -2086,8 +2098,10 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   $("resultSlidesCard").addEventListener("mouseenter",function(){if(window.resultSlideTimer)clearInterval(window.resultSlideTimer);});
   $("resultSlidesCard").addEventListener("mouseleave",startResultRotation);
   window.setInterval(function(){if(currentUser&&currentUser.role==="admin"&&supabaseClient){pullStateFromSupabase(true);}},12000);
+  expireResultSlidesForDay();
   mergeSavedResultsIntoSlides();
   renderResultSlides();renderSlideAdminList();startResultRotation();
+  window.setInterval(checkResultSlideDayRollover,30000);
 
   function updateSessionUI() {
     sessionMode = $("sessionSel").value || "OPEN";
@@ -2585,30 +2599,74 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     var toneSeed = String(item.sourceHead || item.title || activeResultSlide).split("").reduce(function(a,ch){return ((a*31)+ch.charCodeAt(0))>>>0;},7);
     var tone = tones[toneSeed % tones.length], c = [tone,"rgba(22,135,184,.15)"];
     $("resultSlideTitle").textContent = cleanResultHeading(item.title || item.sourceHead || "LIVE RESULT");
-    $("resultSlideContent").innerHTML = '<div class="result-updated-pill">RESULT UPDATED</div><div class="result-main-row" style="--slide-color:'+c[0]+';--slide-soft:'+c[1]+'"><strong class="result-main-stat">'+esc(item.main || "Result Declared")+'</strong></div><div class="result-next-separator">NEXT RESULT</div>';
+    if (String(item.main || "").trim()) {
+      $("resultSlideContent").innerHTML = '<div class="result-updated-pill">RESULT UPDATED</div><div class="result-main-row" style="--slide-color:'+c[0]+';--slide-soft:'+c[1]+'"><strong class="result-main-stat">'+esc(item.main)+'</strong></div><div class="result-next-separator">NEXT RESULT</div>';
+    } else {
+      $("resultSlideContent").innerHTML = '<div class="result-heading-only" aria-hidden="true"></div>';
+    }
     $("resultSlideTimestamp").textContent = "";
     $("resultSlideDots").innerHTML = visible.length > 1 ? visible.map(function(x,i){return '<button type="button" class="result-slide-dot '+(i===activeResultSlide?'active':'')+'" data-result-index="'+i+'" aria-label="Show slide '+(i+1)+'"></button>';}).join("") : "";
   }
-  function mergeSavedResultsIntoSlides() {
-    var latest = {};
-    Object.keys(savedResults || {}).forEach(function(dayKey) {
-      var day = savedResults[dayKey] || {};
-      Object.keys(day).forEach(function(headName) {
-        var r = day[headName], key = resultHeadingKey(headName);
-        if (key && r && r.raw && (!latest[key] || Number(r.updatedAt || 0) > Number(latest[key].updatedAt || 0))) latest[key] = {headName:cleanResultHeading(headName),result:r};
-      });
+  function expireResultSlidesForDay() {
+    var activeKey = getHisabDayInfo(Date.now()).key;
+    resultSlides.forEach(function(item) {
+      if (!item || !item.sourceHead || !String(item.main || "").trim()) return;
+      var itemDay = item.resultDayKey || (item.updatedAt ? getHisabDayInfo(item.updatedAt).key : "");
+      if (itemDay && itemDay !== activeKey) {
+        item.main = "";
+        item.sub = "";
+        item.resultDayKey = activeKey;
+      }
     });
-    Object.keys(latest).forEach(function(key) {
-      var entry = latest[key], r = entry.result, headName = entry.headName, matches = [];
-      resultSlides.forEach(function(x,i) { if (resultHeadingKey(x.sourceHead || x.title) === key) matches.push(i); });
-      var keep = matches.length ? matches[0] : -1, prior = keep >= 0 ? resultSlides[keep] : null;
-      var item = {title:headName,main:String(r.raw),sub:"",updatedAt:Number(r.updatedAt)||Date.now(),visible:prior?prior.visible!==false:true,sourceHead:headName};
-      if (keep >= 0) resultSlides[keep] = Object.assign({},prior,item); else resultSlides.push(item);
+    heads.forEach(function(headName) {
+      var key = resultHeadingKey(headName);
+      var exists = resultSlides.some(function(item) {
+        return item && resultHeadingKey(item.sourceHead || item.title) === key;
+      });
+      if (!exists) resultSlides.push({title:cleanResultHeading(headName),main:"",sub:"",updatedAt:0,visible:true,sourceHead:cleanResultHeading(headName),resultDayKey:activeKey});
+    });
+    resultSlides.forEach(function(item) {
+      if (item && item.sourceHead) {
+        item.title = cleanResultHeading(item.title || item.sourceHead);
+        item.sourceHead = cleanResultHeading(item.sourceHead);
+      }
+    });
+    sv("jio_play_result_slides_v1", resultSlides);
+  }
+  function mergeSavedResultsIntoSlides() {
+    var activeKey = getHisabDayInfo(Date.now()).key;
+    var todayResults = savedResults[activeKey] || {};
+    Object.keys(todayResults).forEach(function(headName) {
+      var r = todayResults[headName], key = resultHeadingKey(headName);
+      if (!key || !r || !r.raw) return;
+      var matches = [];
+      resultSlides.forEach(function(item,i) {
+        if (item && resultHeadingKey(item.sourceHead || item.title) === key) matches.push(i);
+      });
+      var keep = matches.length ? matches[0] : -1;
+      var prior = keep >= 0 ? resultSlides[keep] : null;
+      var item = {title:cleanResultHeading(headName),main:String(r.raw),sub:"",updatedAt:Number(r.updatedAt)||Date.now(),visible:prior ? prior.visible!==false : true,sourceHead:cleanResultHeading(headName),resultDayKey:activeKey};
+      if (keep >= 0) resultSlides[keep] = Object.assign({},prior,item);
+      else resultSlides.push(item);
       for (var j=matches.length-1;j>=1;j--) resultSlides.splice(matches[j],1);
     });
-    resultSlides.forEach(function(x){if(x){x.title=cleanResultHeading(x.title || x.sourceHead);if(x.sourceHead)x.sourceHead=cleanResultHeading(x.sourceHead);}});
-    resultSlides.sort(function(a,b){return Number(b.updatedAt||0)-Number(a.updatedAt||0);});
+    resultSlides.sort(function(a,b) {
+      var aHas = String(a && a.main || "").trim() ? 1 : 0;
+      var bHas = String(b && b.main || "").trim() ? 1 : 0;
+      return bHas-aHas || Number(b.updatedAt||0)-Number(a.updatedAt||0);
+    });
     sv("jio_play_result_slides_v1",resultSlides);
+  }
+  function checkResultSlideDayRollover() {
+    var nextKey = getHisabDayInfo(Date.now()).key;
+    if (nextKey === resultSlideDayKey) return;
+    resultSlideDayKey = nextKey;
+    expireResultSlidesForDay();
+    mergeSavedResultsIntoSlides();
+    activeResultSlide = 0;
+    renderResultSlides();
+    renderSlideAdminList();
+    if (isAdmin()) pushMetaToSupabase();
   }
   function renderSlideAdminList() {
     if (!$("slideAdminList")) return;
@@ -2643,7 +2701,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   function syncPublishedResultSlide(hName,resObj) {
     var key=resultHeadingKey(hName);
     var idx=resultSlides.findIndex(function(x){return resultHeadingKey(x.sourceHead || x.title)===key;});
-    var item={title:cleanResultHeading(hName),main:String(resObj.raw),sub:"",updatedAt:Date.now(),visible:idx>=0?resultSlides[idx].visible!==false:true,sourceHead:cleanResultHeading(hName)};
+    var item={title:cleanResultHeading(hName),main:String(resObj.raw),sub:"",updatedAt:Date.now(),visible:idx>=0?resultSlides[idx].visible!==false:true,sourceHead:cleanResultHeading(hName),resultDayKey:getHisabDayInfo(Date.now()).key};
     if(idx>=0){resultSlides[idx]=Object.assign({},resultSlides[idx],item);for(var i=resultSlides.length-1;i>=0;i--){if(i!==idx && resultHeadingKey(resultSlides[i].sourceHead || resultSlides[i].title)===key)resultSlides.splice(i,1);}}
     else resultSlides.unshift(item);
     sv("jio_play_result_slides_v1",resultSlides);renderSlideAdminList();renderResultSlides();
@@ -2874,6 +2932,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   function switchTab(n) {
     if ((n === 4 || n === 6 || n === 7 || n === 8) && !isAdmin()) n = 1;
     closeDrawer(); $("slipwrap").classList.add("hide"); $("app").classList.remove("hide");
+    window.scrollTo(0, 0);
     resetArm($("clr"), "Clear"); resetArm($("dreset"), "Delete Heading Data");
     $("desk").classList.toggle("hide", n !== 1); $("hist").classList.toggle("hide", n !== 2);
     $("data").classList.toggle("hide", n !== 3); $("sync").classList.toggle("hide", n !== 4);
