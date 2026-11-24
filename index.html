@@ -2048,6 +2048,15 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         var fresh = refreshCurrentUserRecord();
         if (!fresh || fresh.status === "blocked") { clearLoginSession(); showLoginStatus("Your account is blocked by Admin.", true); showLogin(); return; }
         currentUser = fresh;
+        // Retry any locally stored slips for this user so entries created while
+        // cloud permissions were failing are safely recovered after this fix.
+        var pendingOwnSlips = hist.filter(function(s) {
+          return String(s.user || "").trim().toLowerCase() === String(currentUser.id || "").trim().toLowerCase();
+        });
+        for (var pendingIndex = 0; pendingIndex < pendingOwnSlips.length; pendingIndex++) {
+          try { await pushSlipToSupabase(pendingOwnSlips[pendingIndex]); }
+          catch (pendingSaveError) { console.warn("Pending user slip sync failed", pendingSaveError); }
+        }
       }
       applyRolePermissions(); updateSessionUI(); renderDesk(); renderHistory(); renderDataTab(); renderLoadingTab(); renderHisabTab(); renderMarketTab();
       updateCloudBadge("Cloud Live", true);
