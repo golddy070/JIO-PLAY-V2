@@ -89,6 +89,18 @@ Deno.serve(async (req: Request) => {
   const status = String(profile.status || "active").toLowerCase();
   if (status === "blocked") return reply({ success: false, error: "Your account is BLOCKED by Admin." }, 403);
 
+  const publicState = {
+    heads: Array.isArray(meta?.heads) ? meta.heads : [],
+    savedResults: meta?.savedResults && typeof meta.savedResults === "object" ? meta.savedResults : {},
+    resultSlides: Array.isArray(meta?.resultSlides) ? meta.resultSlides : [],
+    adminAnnouncement: meta?.adminAnnouncement && typeof meta.adminAnnouncement === "object" ? meta.adminAnnouncement : {},
+    slideSpeed: Number(meta?.slideSpeed) || 5,
+    headerLinkUrl: typeof meta?.headerLinkUrl === "string" ? meta.headerLinkUrl : "",
+    marketConfig: meta?.marketConfig && typeof meta.marketConfig === "object" ? meta.marketConfig : {},
+    slipCounter: Number(meta?.slipCounter) || 101,
+    updatedAt: Number(meta?.updatedAt) || 0,
+  };
+
   return reply({
     success: true,
     user: {
@@ -97,5 +109,6 @@ Deno.serve(async (req: Request) => {
       status: status === "paused" ? "paused" : "active",
       multipliers: profile.multipliers && typeof profile.multipliers === "object" ? profile.multipliers : {},
     },
+    state: publicState,
   });
 });
