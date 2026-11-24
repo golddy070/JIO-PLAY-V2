@@ -1931,9 +1931,18 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   async function pullStateFromSupabase(silent) {
     if (!supabaseClient) { updateCloudBadge("Supabase unavailable", false); throw new Error("Supabase client could not load. Refresh and try again."); }
     try {
-      var sr = await supabaseClient.from("jio_play_state").select("data").eq("id", "main").maybeSingle();
-      if (sr.error) throw sr.error;
-      var data = sr.data && sr.data.data;
+      var data;
+      if (!isAdmin()) {
+        var publicStateResult = await supabaseClient.functions.invoke("get-user-profile");
+        if (publicStateResult.error || !publicStateResult.data || !publicStateResult.data.success) {
+          throw new Error((publicStateResult.data && publicStateResult.data.error) || (publicStateResult.error && publicStateResult.error.message) || "Could not refresh JIO PLAY settings.");
+        }
+        data = { meta: publicStateResult.data.state || {} };
+      } else {
+        var sr = await supabaseClient.from("jio_play_state").select("data").eq("id", "main").maybeSingle();
+        if (sr.error) throw sr.error;
+        data = sr.data && sr.data.data;
+      }
       if (data && typeof data === "object") {
         var meta = data.meta || data;
         if (typeof meta.slipCounter === "number" && meta.slipCounter > slipCounter) { slipCounter = meta.slipCounter; sv("jio_play_slip_counter_v29", slipCounter); }
@@ -1952,14 +1961,16 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         if (meta.marketConfig && typeof meta.marketConfig === "object") { marketConfig = normalizeMarketConfig(meta.marketConfig, heads); sv("jio_play_market_v39", marketConfig); }
         fillHeads();
       }
-      var lr = await supabaseClient.from("jio_play_slips").select("cloud_key,data").order("created_at", { ascending: false });
-      if (lr.error) throw lr.error;
-      var cloudSlips = (lr.data || []).map(function(row) {
-        var slip = row.data;
-        if (slip && typeof slip === "object") { slip.cloudKey = slip.cloudKey || row.cloud_key; ensureSlipId(slip); return slip; }
-        return null;
-      }).filter(Boolean);
-      if (cloudSlips.length) { cloudSlips.sort(function(x,y) { return (y.t || 0) - (x.t || 0); }); hist = cloudSlips; sv("jio_play_hist_v24", hist); }
+      if (isAdmin()) {
+        var lr = await supabaseClient.from("jio_play_slips").select("cloud_key,data").order("created_at", { ascending: false });
+        if (lr.error) throw lr.error;
+        var cloudSlips = (lr.data || []).map(function(row) {
+          var slip = row.data;
+          if (slip && typeof slip === "object") { slip.cloudKey = slip.cloudKey || row.cloud_key; ensureSlipId(slip); return slip; }
+          return null;
+        }).filter(Boolean);
+        if (cloudSlips.length) { cloudSlips.sort(function(x,y) { return (y.t || 0) - (x.t || 0); }); hist = cloudSlips; sv("jio_play_hist_v24", hist); }
+      }
       if (currentUser && !isAdmin()) {
         var fresh = refreshCurrentUserRecord();
         if (!fresh || fresh.status === "blocked") { clearLoginSession(); showLoginStatus("Your account is blocked by Admin.", true); showLogin(); return; }
@@ -2035,7 +2046,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     applyRolePermissions(); fillHeads(); updateSessionUI(); renderDesk(); renderUserList(); renderMarketTab();
     // Always start with New Slip and hide every other page after login.
     switchTab(1);
-    if (isAdmin() && supabaseClient) pullStateFromSupabase(true);
+    if (supabaseClient) pullStateFromSupabase(true);
   }
   function showLogin() {
     currentUser = null; closeDrawer();
@@ -2156,7 +2167,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   $("resultSlideDots").addEventListener("click",function(e){var b=e.target.closest("[data-result-index]");if(b){activeResultSlide=Number(b.getAttribute("data-result-index"));renderResultSlides();}});
   $("resultSlidesCard").addEventListener("mouseenter",function(){if(window.resultSlideTimer)clearInterval(window.resultSlideTimer);});
   $("resultSlidesCard").addEventListener("mouseleave",startResultRotation);
-  window.setInterval(function(){if(currentUser&&currentUser.role==="admin"&&supabaseClient){pullStateFromSupabase(true);}},12000);
+  window.setInterval(function(){if(currentUser&&supabaseClient){pullStateFromSupabase(true);}},12000);
   expireResultSlidesForDay();
   mergeSavedResultsIntoSlides();
   renderResultSlides();renderSlideAdminList();startResultRotation();
@@ -3034,7 +3045,15 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   };
   $("clr").onclick = function() { if (!rows.length) return; confirmTap(this, "Clear", "Tap again to clear", function() { rows = []; $("errbox").classList.add("hide"); renderDesk(); }); };
 
-  $("gen").onclick = function() {
+  $("gen").onclick = async function() {
+    if (supabaseClient) {
+      var stateFresh = await pullStateFromSupabase(true);
+      if (!stateFresh) {
+        $("errbox").textContent = "Cannot verify current market closing times. Please check your internet connection and try again.";
+        $("errbox").classList.remove("hide");
+        return;
+      }
+    }
     var activeHeadName = heads[hi] || heads[0], activeSessName = $("sessionSel").value || "OPEN";
     if (!isAdmin()) {
       var rec = refreshCurrentUserRecord();
