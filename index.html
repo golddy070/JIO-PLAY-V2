@@ -3068,8 +3068,8 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   $("saveHeaderLinkBtn").onclick = function(){ if(!isAdmin())return; var v=$("headerLinkInput").value.trim(); if(v && v.indexOf("https://")!==0 && v.indexOf("http://")!==0){ $("headerLinkMsg").textContent="Use a full https:// or http:// URL."; return; } headerLinkUrl=v; sv("jio_play_header_link_v1",headerLinkUrl); $("quickNewBtn").classList.toggle("is-unconfigured",!headerLinkUrl); $("headerLinkMsg").textContent="Link saved ✓"; pushMetaToSupabase(); };
   $("manualRefreshBtn").onclick = async function() {
     if (!currentUser || !supabaseClient) { $("manualRefreshMsg").textContent = "Please sign in and check your connection."; return; }
-    var btn = this, idle = "↻ Refresh";
-    btn.disabled = true; btn.textContent = "Refreshing...";
+    var btn = this, label = btn.querySelector("span");
+    btn.disabled = true; if (label) label.textContent = "Refreshing...";
     $("manualRefreshMsg").textContent = "Getting latest cloud data...";
     try {
       var ok = await pullStateFromSupabase(false);
@@ -3078,7 +3078,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     } catch (err) {
       $("manualRefreshMsg").textContent = "Refresh failed: " + (err && err.message ? err.message : "Check internet connection.");
     } finally {
-      btn.disabled = false; btn.querySelector("span").textContent = idle;
+      btn.disabled = false; if (label) label.textContent = "Refresh";
     }
   };
   $("logoHome").onclick = function() { switchTab(1); };
