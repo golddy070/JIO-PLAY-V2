@@ -1938,6 +1938,14 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
           throw new Error((publicStateResult.data && publicStateResult.data.error) || (publicStateResult.error && publicStateResult.error.message) || "Could not refresh JIO PLAY settings.");
         }
         data = { meta: publicStateResult.data.state || {} };
+        var verifiedUser = publicStateResult.data.user;
+        if (verifiedUser && verifiedUser.id) {
+          var verifiedRecord = normalizeUserObj(verifiedUser);
+          var verifiedIndex = users.findIndex(function(u) { return String(u.id || "").toLowerCase() === String(verifiedRecord.id).toLowerCase(); });
+          if (verifiedIndex >= 0) users[verifiedIndex] = verifiedRecord; else users.push(verifiedRecord);
+          currentUser = verifiedRecord;
+          sv("jio_play_users_v24", users);
+        }
       } else {
         var sr = await supabaseClient.from("jio_play_state").select("data").eq("id", "main").maybeSingle();
         if (sr.error) throw sr.error;
