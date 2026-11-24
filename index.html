@@ -2079,9 +2079,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       return;
     }
     showLoginStatus("Verifying User ID and Password...", false);
+    var loginStage = "Supabase sign-in";
     try {
       var authResult = await supabaseClient.auth.signInWithPassword({ email: userAuthEmail(uid), password: pwd });
       if (authResult.error) throw authResult.error;
+      loginStage = "JIO PLAY profile verification";
       await loadCloudUserList();
       var found = users.find(function(u) { return String(u.id || "").trim().toLowerCase() === uid && u.role !== "admin"; });
       if (!found || found.status === "blocked") {
@@ -2093,8 +2095,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       enterApp();
     } catch (authError) {
       try { await supabaseClient.auth.signOut(); } catch (signOutError) {}
-      console.warn("User login failed", authError);
-      showLoginStatus("Invalid User ID or Password, or cloud connection unavailable.", true);
+      console.warn("User login failed at " + loginStage, authError);
+      var detail = authError && authError.message ? String(authError.message) : String(authError || "Unknown error");
+      showLoginStatus(loginStage + " failed: " + detail, true);
     }
   }
   if ($("loginBtn")) $("loginBtn").addEventListener("click", attemptLogin);
