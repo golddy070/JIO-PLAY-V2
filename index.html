@@ -1484,7 +1484,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       <div class="stat-head"><b>Users, Status &amp; Multipliers</b><span id="userCountBadge">0</span></div>
       <div class="row">
         <input id="newUid" placeholder="New User ID (e.g. jack)">
-        <input id="newUpwd" placeholder="Password">
+        <input id="newUpwd" type="password" placeholder="Password (8+ characters)" autocomplete="new-password">
         <button type="button" id="createUserBtn" class="btn-new-head" style="flex:0 0 auto">Add User</button>
       </div>
       <div id="userMgmtMsg" style="font-size:12.5px;color:var(--ok);margin-top:4px"></div>
@@ -1629,7 +1629,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     if (String(u.role || "").toLowerCase() === "admin") st = "active";
     return {
       id: String(u.id || "").trim(),
-      pass: String(u.pass || "").trim(),
+      pass: "",
       role: String(u.role || "user").toLowerCase() === "admin" ? "admin" : "user",
       status: st,
       multipliers: normalizeMultipliers(u.multipliers)
@@ -1999,30 +1999,28 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     try { window.localStorage.removeItem(LOGIN_SESSION_KEY); } catch (e) {}
   }
   async function restoreSavedSession() {
-    var saved = null;
-    try { saved = JSON.parse(window.localStorage.getItem(LOGIN_SESSION_KEY) || "null"); } catch (e) {}
     try {
-      if (saved && saved.role === "user" && saved.id) {
-        var rememberedUser = users.find(function(u) { return String(u.id).toLowerCase() === String(saved.id).toLowerCase() && u.role !== "admin"; });
-        if (rememberedUser && rememberedUser.status !== "blocked") {
-          currentUser = normalizeUserObj(rememberedUser);
-          enterApp();
-          return;
-        }
-        clearLoginSession();
-      }
       if (supabaseClient) {
         var sessionResult = await supabaseClient.auth.getSession();
-        if (!sessionResult.error && sessionResult.data && sessionResult.data.session && String((sessionResult.data.session.user || {}).email || "").toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-          currentUser = { id: "admin", pass: "", role: "admin", status: "active", multipliers: normalizeMultipliers(DEFAULT_MULTIPLIERS) };
-          saveLoginSession(currentUser);
-          enterApp();
-          return;
+        var sessionUser = sessionResult.data && sessionResult.data.session && sessionResult.data.session.user;
+        if (!sessionResult.error && sessionUser) {
+          var sessionEmail = String(sessionUser.email || "").toLowerCase();
+          if (sessionEmail === ADMIN_EMAIL.toLowerCase()) {
+            currentUser = { id: "admin", pass: "", role: "admin", status: "active", multipliers: normalizeMultipliers(DEFAULT_MULTIPLIERS) };
+            saveLoginSession(currentUser); enterApp(); return;
+          }
+          var sessionUid = String((sessionUser.email || "").split("@")[0] || "").toLowerCase();
+          await loadCloudUserList();
+          var rememberedUser = users.find(function(u) { return String(u.id || "").toLowerCase() === sessionUid && u.role !== "admin"; });
+          if (rememberedUser && rememberedUser.status !== "blocked") {
+            currentUser = normalizeUserObj(rememberedUser);
+            saveLoginSession(currentUser); enterApp(); return;
+          }
+          await supabaseClient.auth.signOut();
         }
       }
     } catch (restoreError) { console.warn("Session restore failed", restoreError); }
-    clearLoginSession();
-    showLogin();
+    clearLoginSession(); showLogin();
   }
   function enterApp() {
     saveLoginSession(currentUser);
@@ -2037,12 +2035,26 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     $("slipwrap").classList.add("hide"); $("app").classList.add("hide"); $("loginGate").classList.remove("hide");
     if ($("loginErr")) $("loginErr").classList.add("hide");
   }
+  async function loadCloudUserList() {
+    if (!supabaseClient) throw new Error("Supabase is unavailable.");
+    var sr = await supabaseClient.from("jio_play_state").select("data").eq("id", "main").maybeSingle();
+    if (sr.error) throw sr.error;
+    var cloudData = sr.data && sr.data.data;
+    var meta = cloudData && (cloudData.meta || cloudData);
+    if (meta && Array.isArray(meta.users)) {
+      users = meta.users.map(normalizeUserObj).filter(function(u) { return !!u.id; });
+      if (!users.some(function(u) { return u.role === "admin"; })) users.unshift(normalizeUserObj(DEFAULT_USERS[0]));
+      sv("jio_play_users_v24", users);
+    }
+    return users;
+  }
+  function userAuthEmail(uid) { return String(uid || "").trim().toLowerCase() + "@users.jio-play-v2.invalid"; }
   async function attemptLogin() {
     var uid = String(($("loginId") ? $("loginId").value : "") || "").trim().toLowerCase();
     var pwd = String(($("loginPass") ? $("loginPass").value : "") || "").trim();
     if (!uid || !pwd) { showLoginStatus("Enter your User ID and Password.", true); return; }
+    if (!supabaseClient) { showLoginStatus("Supabase could not load. Check your internet connection and refresh.", true); return; }
     if (uid === "admin") {
-      if (!supabaseClient) { showLoginStatus("Supabase could not load. Check your internet connection and refresh.", true); return; }
       showLoginStatus("Verifying secure Admin login...", false);
       try {
         var authResult = await supabaseClient.auth.signInWithPassword({ email: ADMIN_EMAIL, password: pwd });
@@ -2057,11 +2069,24 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       } catch (authError) { showLoginStatus("Admin login failed. Check the Supabase email/password and confirm the Admin user exists.", true); }
       return;
     }
-    var found = users.find(function(u) { return String(u.id || "").trim().toLowerCase() === uid && String(u.pass || "").trim() === pwd && u.role !== "admin"; });
-    if (!found) { showLoginStatus("Invalid demo User ID or Password.", true); return; }
-    var normU = normalizeUserObj(found);
-    if (normU.status === "blocked") { showLoginStatus("Your account is BLOCKED by Admin.", true); return; }
-    currentUser = normU; enterApp();
+    showLoginStatus("Verifying User ID and Password...", false);
+    try {
+      var authResult = await supabaseClient.auth.signInWithPassword({ email: userAuthEmail(uid), password: pwd });
+      if (authResult.error) throw authResult.error;
+      await loadCloudUserList();
+      var found = users.find(function(u) { return String(u.id || "").trim().toLowerCase() === uid && u.role !== "admin"; });
+      if (!found || found.status === "blocked") {
+        await supabaseClient.auth.signOut();
+        showLoginStatus(found ? "Your account is BLOCKED by Admin." : "This User ID is not active in JIO PLAY. Contact Admin.", true);
+        return;
+      }
+      currentUser = normalizeUserObj(found);
+      enterApp();
+    } catch (authError) {
+      try { await supabaseClient.auth.signOut(); } catch (signOutError) {}
+      console.warn("User login failed", authError);
+      showLoginStatus("Invalid User ID or Password, or cloud connection unavailable.", true);
+    }
   }
   if ($("loginBtn")) $("loginBtn").addEventListener("click", attemptLogin);
   if ($("loginPass")) $("loginPass").addEventListener("keydown", function(e) { if (e.key === "Enter") attemptLogin(); });
@@ -3061,14 +3086,30 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   if ($("lPublishResultBtn")) $("lPublishResultBtn").onclick = function() { publishResultToAllUsers("loading"); };
   if ($("lResultInput")) $("lResultInput").onkeydown = function(e) { if (e.key === "Enter") publishResultToAllUsers("loading"); };
 
-  $("createUserBtn").onclick = function() {
+  $("createUserBtn").onclick = async function() {
     if (!isAdmin()) return;
-    var uid = ($("newUid").value || "").trim(), upwd = ($("newUpwd").value || "").trim();
-    if (!uid || !upwd) { $("userMgmtMsg").textContent = "Enter ID and Password."; return; }
-    if (users.some(function(u) { return u.id.toLowerCase() === uid.toLowerCase(); })) { $("userMgmtMsg").textContent = "User already exists."; return; }
-    users.push(normalizeUserObj({ id: uid, pass: upwd, role: "user", status: "active", multipliers: DEFAULT_MULTIPLIERS }));
-    sv("jio_play_users_v24", users); $("newUid").value = ""; $("newUpwd").value = "";
-    $("userMgmtMsg").textContent = 'Added "' + uid + '" ✓'; renderUserList(); populateUserSelects(); pushMetaToSupabase();
+    var uid = ($("newUid").value || "").trim().toLowerCase(), upwd = ($("newUpwd").value || "").trim();
+    if (!/^[a-z0-9]{3,20}$/.test(uid)) { $("userMgmtMsg").textContent = "User ID must be 3–20 letters or numbers, with no spaces."; return; }
+    if (upwd.length < 8) { $("userMgmtMsg").textContent = "Password must contain at least 8 characters."; return; }
+    if (!supabaseClient) { $("userMgmtMsg").textContent = "Supabase is unavailable."; return; }
+    var sessionResult = await supabaseClient.auth.getSession();
+    var accessToken = sessionResult.data && sessionResult.data.session && sessionResult.data.session.access_token;
+    if (!accessToken) { $("userMgmtMsg").textContent = "Admin session expired. Please log in again."; return; }
+    $("createUserBtn").disabled = true; $("userMgmtMsg").textContent = "Creating secure cloud account...";
+    try {
+      var created = await supabaseClient.functions.invoke("admin-create-user", { body: { username: uid, password: upwd } });
+      if (created.error || !created.data || !created.data.success) throw new Error((created.data && created.data.error) || (created.error && created.error.message) || "Account creation failed.");
+      var existingIndex = users.findIndex(function(u) { return String(u.id || "").toLowerCase() === uid; });
+      var safeRecord = normalizeUserObj({ id: uid, role: "user", status: "active", multipliers: DEFAULT_MULTIPLIERS });
+      if (existingIndex >= 0) users[existingIndex] = safeRecord; else users.push(safeRecord);
+      sv("jio_play_users_v24", users); $("newUid").value = ""; $("newUpwd").value = "";
+      await pushMetaToSupabase();
+      $("userMgmtMsg").textContent = 'Cloud account "' + uid + '" created ✓';
+      renderUserList(); populateUserSelects();
+    } catch (createError) {
+      console.error("Secure user creation failed", createError);
+      $("userMgmtMsg").textContent = createError.message || "Could not create user. Check Edge Function setup.";
+    } finally { $("createUserBtn").disabled = false; }
   };
   $("userListBox").onchange = function(e) {
     if (!isAdmin()) return; var sel = e.target.closest(".u-status-sel"); if (!sel) return;
