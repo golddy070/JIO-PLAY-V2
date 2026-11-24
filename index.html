@@ -1120,6 +1120,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 #slideSpeedInput{width:100%;accent-color:#1687b8;padding:0;margin-top:7px}
 @media(max-width:600px){.result-slides-card{padding:11px!important}.result-slide-content{min-height:92px}.result-slide-footer>span{font-size:9px}.result-admin-panel{padding:10px}}
 @media(prefers-reduced-motion:no-preference){.result-slide-content{animation:resultFade .28s ease}@keyframes resultFade{from{opacity:.45;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}}
+#manualRefreshRow{display:flex;align-items:center;gap:8px;margin:0 0 9px;padding:0 2px}#manualRefreshBtn{flex:0 0 auto;padding:8px 12px;font-size:11px;background:linear-gradient(135deg,#126b9b,#087fae);border:1px solid #318db5;color:#e9f7ff}#manualRefreshMsg{font-size:10px;color:#9ca3af;min-width:0;overflow-wrap:anywhere}
 </style>
 <style id="jio-play-user-request-fixes">#quickNewBtn{background:linear-gradient(135deg,#126b9b,#087fae)!important;border:1px solid #318db5!important;color:#e9f7ff!important}.result-admin-panel{margin:7px 0 10px!important}#toggleSlidesManager,#toggleLinkSettings{margin-bottom:5px}</style>
 </head>
@@ -1231,6 +1232,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     </div>
     <button type="button" id="quickNewBtn" class="home-dot-btn hide" title="Open linked page" aria-label="Open linked page"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg></button>
   </header>
+  <div id="manualRefreshRow" aria-label="Cloud refresh controls"><button type="button" id="manualRefreshBtn">↻ Refresh</button><span id="manualRefreshMsg" role="status" aria-live="polite">Refresh latest cloud data</span></div>
 
   <div id="desk">
   <section id="announcementCard" class="announcement-card hide" aria-label="Admin announcement">
@@ -3036,6 +3038,21 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   };
   $("toggleLinkSettings").onclick = function(){ $("linkSettingsPanel").classList.toggle("hide"); $("headerLinkInput").value=headerLinkUrl; };
   $("saveHeaderLinkBtn").onclick = function(){ if(!isAdmin())return; var v=$("headerLinkInput").value.trim(); if(v && v.indexOf("https://")!==0 && v.indexOf("http://")!==0){ $("headerLinkMsg").textContent="Use a full https:// or http:// URL."; return; } headerLinkUrl=v; sv("jio_play_header_link_v1",headerLinkUrl); $("quickNewBtn").classList.toggle("hide",!headerLinkUrl); $("headerLinkMsg").textContent="Link saved ✓"; pushMetaToSupabase(); };
+  $("manualRefreshBtn").onclick = async function() {
+    if (!currentUser || !supabaseClient) { $("manualRefreshMsg").textContent = "Please sign in and check your connection."; return; }
+    var btn = this, idle = "↻ Refresh";
+    btn.disabled = true; btn.textContent = "Refreshing...";
+    $("manualRefreshMsg").textContent = "Getting latest cloud data...";
+    try {
+      var ok = await pullStateFromSupabase(false);
+      if (!ok) throw new Error("Cloud data could not be refreshed.");
+      $("manualRefreshMsg").textContent = "Updated just now ✓";
+    } catch (err) {
+      $("manualRefreshMsg").textContent = "Refresh failed: " + (err && err.message ? err.message : "Check internet connection.");
+    } finally {
+      btn.disabled = false; btn.textContent = idle;
+    }
+  };
   $("logoHome").onclick = function() { switchTab(1); };
   $("quickNewBtn").onclick = function() { if(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0) window.open(headerLinkUrl,"_blank","noopener"); };
   $("t1").onclick = function() { switchTab(1); }; $("t2").onclick = function() { switchTab(2); }; $("t3").onclick = function() { switchTab(3); };
