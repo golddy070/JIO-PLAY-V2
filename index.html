@@ -2053,10 +2053,21 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       try {
         var response = result.error.context;
         if (response && typeof response.clone === "function") {
-          var errorBody = await response.clone().json();
-          if (errorBody && errorBody.error) detail = String(errorBody.error);
+          var responseText = await response.clone().text();
+          var statusInfo = "HTTP " + response.status + (response.statusText ? " " + response.statusText : "");
+          if (responseText) {
+            try {
+              var errorBody = JSON.parse(responseText);
+              detail = String(errorBody.error || errorBody.message || responseText);
+            } catch (parseError) {
+              detail = responseText.slice(0, 350);
+            }
+          }
+          detail = statusInfo + ": " + detail;
         }
-      } catch (readError) {}
+      } catch (readError) {
+        console.warn("Could not read Edge Function error response", readError);
+      }
       throw new Error(detail);
     }
     if (!result.data || !result.data.success || !result.data.user) {
