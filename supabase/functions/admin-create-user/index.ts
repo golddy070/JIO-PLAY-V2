@@ -18,11 +18,10 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return reply({ success: false, error: "Method not allowed." }, 405);
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const adminEmail = (Deno.env.get("JIO_ADMIN_EMAIL") || "golddy070@gmail.com").toLowerCase();
 
-  if (!supabaseUrl || !anonKey || !serviceRoleKey) {
+  if (!supabaseUrl || !serviceRoleKey) {
     return reply({ success: false, error: "Server authentication is not configured." }, 500);
   }
 
@@ -30,7 +29,7 @@ Deno.serve(async (req: Request) => {
   const token = authorization.replace(/^Bearer\s+/i, "");
   if (!token) return reply({ success: false, error: "Admin login required." }, 401);
 
-  const verifier = createClient(supabaseUrl, anonKey, {
+  const verifier = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: authData, error: authError } = await verifier.auth.getUser(token);
