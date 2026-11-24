@@ -2932,6 +2932,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   function switchTab(n) {
     if ((n === 4 || n === 6 || n === 7 || n === 8) && !isAdmin()) n = 1;
     closeDrawer(); $("slipwrap").classList.add("hide"); $("app").classList.remove("hide");
+    window.scrollTo(0, 0);
     resetArm($("clr"), "Clear"); resetArm($("dreset"), "Delete Heading Data");
     $("desk").classList.toggle("hide", n !== 1); $("hist").classList.toggle("hide", n !== 2);
     $("data").classList.toggle("hide", n !== 3); $("sync").classList.toggle("hide", n !== 4);
