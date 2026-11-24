@@ -2048,9 +2048,20 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     // Non-admin users cannot read the admin-only jio_play_state table directly.
     // A server-side Edge Function validates their Auth session and returns only their own profile.
     var result = await supabaseClient.functions.invoke("get-user-profile", { body: {} });
-    if (result.error || !result.data || !result.data.success || !result.data.user) {
+    if (result.error) {
+      var detail = result.error.message || "Edge Function request failed.";
+      try {
+        var response = result.error.context;
+        if (response && typeof response.clone === "function") {
+          var errorBody = await response.clone().json();
+          if (errorBody && errorBody.error) detail = String(errorBody.error);
+        }
+      } catch (readError) {}
+      throw new Error(detail);
+    }
+    if (!result.data || !result.data.success || !result.data.user) {
       var message = result.data && result.data.error;
-      throw new Error(message || (result.error && result.error.message) || "Could not verify your JIO PLAY user account.");
+      throw new Error(message || "Could not verify your JIO PLAY user account.");
     }
     var profile = normalizeUserObj(result.data.user);
     users = [normalizeUserObj(DEFAULT_USERS[0]), profile];
