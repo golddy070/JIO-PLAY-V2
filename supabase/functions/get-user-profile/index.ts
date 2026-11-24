@@ -51,7 +51,19 @@ Deno.serve(async (req: Request) => {
     .eq("id", "main")
     .maybeSingle();
 
-  if (error) return reply({ success: false, error: "Could not load your JIO PLAY account. Please try again." }, 503);
+  if (error) {
+    console.error("get-user-profile database lookup failed", {
+      code: error.code || null,
+      message: error.message || null,
+      details: error.details || null,
+      hint: error.hint || null,
+    });
+    const diagnostic = [error.code, error.message].filter(Boolean).join(": ");
+    return reply({
+      success: false,
+      error: "Database lookup failed" + (diagnostic ? ": " + diagnostic : "."),
+    }, 503);
+  }
 
   const cloudData = data?.data;
   const meta = cloudData && (cloudData.meta || cloudData);
