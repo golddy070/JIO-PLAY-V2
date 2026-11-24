@@ -1,0 +1,17 @@
+{
+  "name": "jio-play-v2-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper for JIO PLAY V2",
+  "scripts": {
+    "copy-web": "mkdir -p www && cp index.html www/index.html",
+    "android:sync": "npm run copy-web && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.0",
+    "@capacitor/core": "6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.0"
+  }
+}
