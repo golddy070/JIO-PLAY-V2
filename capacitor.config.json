@@ -2,5 +2,12 @@
   "appId": "com.jioplay.v2",
   "appName": "JIO PLAY V2",
   "webDir": "www",
-  "bundledWebRuntime": false
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://golddy070.github.io/JIO-PLAY-V2/",
+    "cleartext": false,
+    "allowNavigation": [
+      "golddy070.github.io"
+    ]
+  }
 }
