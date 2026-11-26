@@ -3104,7 +3104,27 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
       }
       await streamLowDraw(btChar, payload);
       st.textContent = "Print complete ✓";
-    } catch (err) { btChar = null; st.textContent = "Print stopped: " + (err && err.message ? err.message : String(err)); }
+    } catch (err) {
+      btChar = null;
+      var printError = err && err.message ? err.message : String(err);
+      st.textContent = "Print stopped: " + printError;
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.JioNativeBluetooth && window.JioNativeBluetooth.getLastDiagnostic) {
+        var d = window.JioNativeBluetooth.getLastDiagnostic();
+        alert("JIO PLAY V2 PRINT FAILURE DIAGNOSTIC\n\nStatus: " + (d.status || "Unknown") +
+          "\nStage: " + (d.stage || "Unknown") +
+          "\nPrinter ID: " + (d.deviceId || "Unknown") +
+          "\nSelected service: " + (d.service || "Not selected") +
+          "\nSelected characteristic: " + (d.characteristic || "Not selected") +
+          "\nWrite mode: " + (d.writeMode || "Not selected") +
+          "\nTotal bytes: " + (d.totalBytes || 0) +
+          "\nBytes sent successfully: " + (d.bytesSent || 0) +
+          "\nChunks sent successfully: " + (d.chunksSent || 0) +
+          "\nChunk size: " + (d.chunkSize || "Unknown") +
+          "\nFailed/current chunk: " + (d.failedChunk || "Unknown") +
+          "\nError: " + (d.error || printError) +
+          "\n\nAll printer channels:\n" + (d.diagnostics || "Not available"));
+      }
+    }
     finally { isPrinting = false; $("btPrint").disabled = false; }
   }
 
@@ -3628,34 +3648,76 @@ async function connectNativePrinter() {
   }
 }
 
+var nativePrintDiagnostic = {};
 window.JioNativeBluetooth = {
+  getLastDiagnostic: function() { return nativePrintDiagnostic; },
   print: async function(buffer) {
-    await connectNativePrinter();
-    // Use the standard BLE payload size on Android unless a larger MTU
-    // has been explicitly negotiated. Keep the Chrome browser path unchanged.
-    var chunkSize = 20;
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    var chunksSent = 0;
-    for (var i = 0; i < bytes.length; i += chunkSize) {
-      var part = bytes.slice(i, i + chunkSize);
-      var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
-      if (printerUsesNoResponse) {
-        await BleClient.writeWithoutResponse(printerDeviceId, printerServiceId, printerCharacteristicId, view);
-        await new Promise(function(resolve) { setTimeout(resolve, 12); });
-      } else {
-        await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
-        await new Promise(function(resolve) { setTimeout(resolve, 6); });
-      }
-      chunksSent++;
-    }
-    return {
-      bytesSent: bytes.length,
-      chunksSent: chunksSent,
-      service: printerServiceId,
-      characteristic: printerCharacteristicId,
-      writeMode: printerUsesNoResponse ? "writeWithoutResponse" : "write",
-      diagnostics: window.JioNativeBluetoothDiagnostics || "Not available"
+    var chunksSent = 0, chunkSize = 20, currentChunk = 0;
+    nativePrintDiagnostic = {
+      status: "Starting",
+      stage: "Connecting to printer",
+      deviceId: printerDeviceId || "Not selected",
+      service: printerServiceId || "Not selected",
+      characteristic: printerCharacteristicId || "Not selected",
+      writeMode: "Not selected",
+      totalBytes: bytes.length,
+      bytesSent: 0,
+      chunksSent: 0,
+      chunkSize: chunkSize,
+      failedChunk: "Not started",
+      error: "None",
+      diagnostics: "Reading printer services..."
     };
+    try {
+      await connectNativePrinter();
+      nativePrintDiagnostic.status = "Connected";
+      nativePrintDiagnostic.stage = "Printer channel selected";
+      nativePrintDiagnostic.deviceId = printerDeviceId || "Unknown";
+      nativePrintDiagnostic.service = printerServiceId || "Not selected";
+      nativePrintDiagnostic.characteristic = printerCharacteristicId || "Not selected";
+      nativePrintDiagnostic.writeMode = printerUsesNoResponse ? "writeWithoutResponse" : "write";
+      nativePrintDiagnostic.diagnostics = window.JioNativeBluetoothDiagnostics || "Not available";
+      for (var i = 0; i < bytes.length; i += chunkSize) {
+        currentChunk = Math.floor(i / chunkSize) + 1;
+        nativePrintDiagnostic.stage = "Writing BLE data";
+        nativePrintDiagnostic.failedChunk = currentChunk;
+        var part = bytes.slice(i, i + chunkSize);
+        var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
+        if (printerUsesNoResponse) {
+          await BleClient.writeWithoutResponse(printerDeviceId, printerServiceId, printerCharacteristicId, view);
+          await new Promise(function(resolve) { setTimeout(resolve, 12); });
+        } else {
+          await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
+          await new Promise(function(resolve) { setTimeout(resolve, 6); });
+        }
+        chunksSent++;
+        nativePrintDiagnostic.chunksSent = chunksSent;
+        nativePrintDiagnostic.bytesSent = Math.min(chunksSent * chunkSize, bytes.length);
+        nativePrintDiagnostic.failedChunk = "None";
+      }
+      nativePrintDiagnostic.status = "Transfer finished";
+      nativePrintDiagnostic.stage = "All BLE chunks accepted";
+      return {
+        bytesSent: bytes.length,
+        chunksSent: chunksSent,
+        service: printerServiceId,
+        characteristic: printerCharacteristicId,
+        writeMode: printerUsesNoResponse ? "writeWithoutResponse" : "write",
+        diagnostics: window.JioNativeBluetoothDiagnostics || "Not available"
+      };
+    } catch (err) {
+      nativePrintDiagnostic.status = "Failed";
+      nativePrintDiagnostic.error = err && err.message ? err.message : String(err);
+      nativePrintDiagnostic.failedChunk = currentChunk || "Connection/setup";
+      nativePrintDiagnostic.chunksSent = chunksSent;
+      nativePrintDiagnostic.bytesSent = Math.min(chunksSent * chunkSize, bytes.length);
+      nativePrintDiagnostic.service = printerServiceId || "Not selected";
+      nativePrintDiagnostic.characteristic = printerCharacteristicId || "Not selected";
+      nativePrintDiagnostic.writeMode = printerUsesNoResponse ? "writeWithoutResponse" : (printerCharacteristicId ? "write" : "Not selected");
+      nativePrintDiagnostic.diagnostics = window.JioNativeBluetoothDiagnostics || "Service list unavailable";
+      throw err;
+    }
   }
 };
 </script>
