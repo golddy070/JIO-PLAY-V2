@@ -3631,9 +3631,9 @@ async function connectNativePrinter() {
 window.JioNativeBluetooth = {
   print: async function(buffer) {
     await connectNativePrinter();
-    // Match the proven Chrome Web Bluetooth printer transfer: 64-byte chunks
-    // with a short pause after every write to avoid overrunning the printer.
-    var chunkSize = 64;
+    // Use the standard BLE payload size on Android unless a larger MTU
+    // has been explicitly negotiated. Keep the Chrome browser path unchanged.
+    var chunkSize = 20;
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
     var chunksSent = 0;
     for (var i = 0; i < bytes.length; i += chunkSize) {
