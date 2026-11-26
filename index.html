@@ -3079,8 +3079,14 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 
       if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.JioNativeBluetooth) {
         st.textContent = "Connecting to SEZNIK printer...";
-        await window.JioNativeBluetooth.print(payload);
-        st.textContent = "Print complete ✓ Printer remains ready.";
+        var nativePrintInfo = await window.JioNativeBluetooth.print(payload);
+        st.textContent = "BLE transfer finished (" + nativePrintInfo.bytesSent + " bytes).";
+        alert("JIO PLAY V2 Bluetooth diagnostic\\n\\nSelected service: " + nativePrintInfo.service +
+          "\\nSelected characteristic: " + nativePrintInfo.characteristic +
+          "\\nWrite mode: " + nativePrintInfo.writeMode +
+          "\\nBytes sent: " + nativePrintInfo.bytesSent +
+          "\\nChunks sent: " + nativePrintInfo.chunksSent +
+          "\\n\\nAll printer channels found:\\n" + nativePrintInfo.diagnostics);
         return;
       }
 
@@ -3581,6 +3587,12 @@ async function connectNativePrinter() {
   }
   if (!printerServiceId || !printerCharacteristicId) {
     var services = await BleClient.getServices(printerDeviceId), found = null;
+    window.JioNativeBluetoothDiagnostics = services.map(function(svc) {
+      return "Service " + svc.uuid + ": " + (svc.characteristics || []).map(function(ch) {
+        var p = ch.properties || {};
+        return ch.uuid + " [write=" + !!p.write + ", noResponse=" + !!p.writeWithoutResponse + "]";
+      }).join("; ");
+    }).join("\\n");
     for (var s = 0; s < services.length && !found; s++) {
       for (var c = 0; c < services[s].characteristics.length; c++) {
         var props = services[s].characteristics[c].properties || {};
@@ -3604,6 +3616,7 @@ window.JioNativeBluetooth = {
     // with a short pause after every write to avoid overrunning the printer.
     var chunkSize = 64;
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    var chunksSent = 0;
     for (var i = 0; i < bytes.length; i += chunkSize) {
       var part = bytes.slice(i, i + chunkSize);
       var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
@@ -3614,7 +3627,16 @@ window.JioNativeBluetooth = {
         await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
         await new Promise(function(resolve) { setTimeout(resolve, 6); });
       }
+      chunksSent++;
     }
+    return {
+      bytesSent: bytes.length,
+      chunksSent: chunksSent,
+      service: printerServiceId,
+      characteristic: printerCharacteristicId,
+      writeMode: printerUsesNoResponse ? "writeWithoutResponse" : "write",
+      diagnostics: window.JioNativeBluetoothDiagnostics || "Not available"
+    };
   }
 };
 </script>
