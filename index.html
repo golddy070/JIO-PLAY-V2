@@ -3727,6 +3727,9 @@ window.JioNativeBluetooth = {
         service: printerServiceId,
         characteristic: printerCharacteristicId,
         writeMode: printerUsesNoResponse ? "writeWithoutResponse" : "write",
+        negotiatedMtu: nativePrintDiagnostic.negotiatedMtu,
+        connectionPriority: nativePrintDiagnostic.connectionPriority,
+        chunkSize: chunkSize,
         diagnostics: window.JioNativeBluetoothDiagnostics || "Not available"
       };
     } catch (err) {
