@@ -3650,7 +3650,7 @@ window.JioNativeBluetooth = {
   getLastDiagnostic: function() { return nativePrintDiagnostic; },
   print: async function(buffer) {
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    var chunksSent = 0, chunkSize = 100, currentChunk = 0, negotiatedMtu = null, priorityRequested = false;
+    var chunksSent = 0, chunkSize = 125, currentChunk = 0, negotiatedMtu = null, priorityRequested = false;
     nativePrintDiagnostic = {
       status: "Starting",
       stage: "Connecting to printer",
