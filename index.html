@@ -3647,7 +3647,7 @@ window.JioNativeBluetooth = {
   getLastDiagnostic: function() { return nativePrintDiagnostic; },
   print: async function(buffer) {
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    var chunksSent = 0, chunkSize = 20, currentChunk = 0;
+    var chunksSent = 0, chunkSize = 20, currentChunk = 0, negotiatedMtu = null, priorityRequested = false;
     nativePrintDiagnostic = {
       status: "Starting",
       stage: "Connecting to printer",
@@ -3659,6 +3659,8 @@ window.JioNativeBluetooth = {
       bytesSent: 0,
       chunksSent: 0,
       chunkSize: chunkSize,
+      negotiatedMtu: "Not checked",
+      connectionPriority: "Balanced/default",
       failedChunk: "Not started",
       error: "None",
       diagnostics: "Reading printer services..."
@@ -3672,6 +3674,22 @@ window.JioNativeBluetooth = {
       nativePrintDiagnostic.characteristic = printerCharacteristicId || "Not selected";
       nativePrintDiagnostic.writeMode = printerUsesNoResponse ? "writeWithoutResponse" : "write";
       nativePrintDiagnostic.diagnostics = window.JioNativeBluetoothDiagnostics || "Not available";
+      // Ask Android for a low-latency connection during the print transfer.
+      // Keep 20-byte chunks for printer compatibility; do not assume a larger MTU
+      // means this printer firmware accepts larger payloads.
+      try {
+        await BleClient.requestConnectionPriority(printerDeviceId, 1);
+        priorityRequested = true;
+        nativePrintDiagnostic.connectionPriority = "High requested";
+      } catch (priorityError) {
+        nativePrintDiagnostic.connectionPriority = "High request unsupported: " + (priorityError && priorityError.message ? priorityError.message : String(priorityError));
+      }
+      try {
+        negotiatedMtu = await BleClient.getMtu(printerDeviceId);
+        nativePrintDiagnostic.negotiatedMtu = negotiatedMtu;
+      } catch (mtuError) {
+        nativePrintDiagnostic.negotiatedMtu = "Unavailable: " + (mtuError && mtuError.message ? mtuError.message : String(mtuError));
+      }
       for (var i = 0; i < bytes.length; i += chunkSize) {
         currentChunk = Math.floor(i / chunkSize) + 1;
         nativePrintDiagnostic.stage = "Writing BLE data";
@@ -3680,7 +3698,7 @@ window.JioNativeBluetooth = {
         var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
         if (printerUsesNoResponse) {
           await BleClient.writeWithoutResponse(printerDeviceId, printerServiceId, printerCharacteristicId, view);
-          await new Promise(function(resolve) { setTimeout(resolve, 12); });
+          await new Promise(function(resolve) { setTimeout(resolve, 6); });
         } else {
           await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
           await new Promise(function(resolve) { setTimeout(resolve, 6); });
@@ -3689,6 +3707,14 @@ window.JioNativeBluetooth = {
         nativePrintDiagnostic.chunksSent = chunksSent;
         nativePrintDiagnostic.bytesSent = Math.min(chunksSent * chunkSize, bytes.length);
         nativePrintDiagnostic.failedChunk = "None";
+      }
+      if (priorityRequested) {
+        try {
+          await BleClient.requestConnectionPriority(printerDeviceId, 0);
+          nativePrintDiagnostic.connectionPriority = "Returned to balanced";
+        } catch (restorePriorityError) {
+          nativePrintDiagnostic.connectionPriority = "High transfer completed; balanced restore unavailable";
+        }
       }
       nativePrintDiagnostic.status = "Transfer finished";
       nativePrintDiagnostic.stage = "All BLE chunks accepted";
@@ -3701,6 +3727,14 @@ window.JioNativeBluetooth = {
         diagnostics: window.JioNativeBluetoothDiagnostics || "Not available"
       };
     } catch (err) {
+      if (priorityRequested) {
+        try {
+          await BleClient.requestConnectionPriority(printerDeviceId, 0);
+          nativePrintDiagnostic.connectionPriority = "Returned to balanced after error";
+        } catch (restorePriorityError) {
+          nativePrintDiagnostic.connectionPriority = "Could not restore balanced priority";
+        }
+      }
       nativePrintDiagnostic.status = "Failed";
       nativePrintDiagnostic.error = err && err.message ? err.message : String(err);
       nativePrintDiagnostic.failedChunk = currentChunk || "Connection/setup";
