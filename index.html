@@ -6,7 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700;800&family=Noto+Sans+Devanagari:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #070913;
@@ -359,6 +359,7 @@ button.btn-bt {
 }
 button.btn-copy { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: #fff; border: 1.5px solid #a5b4fc; }
 button.btn-share { background: linear-gradient(135deg, #10b981 0%, #0d9488 100%); color: #fff; border: 1.5px solid #6ee7b7; }
+button.btn-pdf { background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 55%, #4f46e5 100%); color: #fff; border: 1.5px solid #f0abfc; }
 button.btn-print { background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%); color: #fff; border: 1.5px solid #d8b4fe; }
 button.danger { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); color: #fff; border: 1.5px solid #fda4af; }
 .row { display: flex; gap: 7px; margin: 9px 0; }
@@ -1607,8 +1608,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   </div>
   <div class="row no">
     <button type="button" id="copy" class="btn-copy">Copy Slip</button>
-    <button type="button" id="shareBtn" class="btn-share">Share</button>
+    <button type="button" id="shareBtn" class="btn-share">Share Slip</button>
     <button type="button" id="print" class="btn-print">Browser Print</button>
+  </div>
+  <div class="row no">
+    <button type="button" id="sharePdfBtn" class="btn-pdf">Share PDF</button>
   </div>
   <div class="row no">
     <button type="button" id="sdel" class="danger">Delete Slip</button>
@@ -1616,6 +1620,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function() {
@@ -3381,7 +3386,82 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   };
   $("btPrint").onclick = directBluetoothPrint; $("print").onclick = function() { window.print(); };
   $("copy").onclick = function() { if (curSlip) copyTextReliable(formatSlipText(curSlip), this, "Copy Slip"); };
-  $("shareBtn").onclick = function() { if (!curSlip) return; var t = formatSlipText(curSlip); if (navigator.share) navigator.share({ title: curSlip.head, text: t }).catch(function() {}); else copyTextReliable(t, this, "Share"); };
+  $("shareBtn").onclick = async function() {
+    if (!curSlip) return;
+    var btn = this, original = btn.textContent, txt = formatSlipText(curSlip);
+    btn.disabled = true; btn.textContent = "OPENING SHARE...";
+    try {
+      if (window.JioNativeShare && window.JioNativeShare.shareText) {
+        await window.JioNativeShare.shareText({ title: curSlip.head || "JIO PLAY Slip", text: txt, dialogTitle: "Share Slip" });
+      } else if (navigator.share) {
+        await navigator.share({ title: curSlip.head || "JIO PLAY Slip", text: txt });
+      } else {
+        throw new Error("Native sharing is unavailable. Update the Android app with the Share plugin first.");
+      }
+    } catch (err) {
+      if (err && err.name !== "AbortError") alert("Could not open sharing: " + (err.message || "Please try again."));
+    } finally { btn.disabled = false; btn.textContent = original; }
+  };
+  function makeSlipPdf(s) {
+    if (!window.jspdf || !window.jspdf.jsPDF) throw new Error("PDF generator is still loading. Please try again.");
+    var text = formatSlipText(s), lines = text.split("\n"), width = 794, pad = 48, lineHeight = 42;
+    var measureCanvas = document.createElement("canvas"), mctx = measureCanvas.getContext("2d");
+    mctx.font = '27px "Noto Sans Devanagari", "Plus Jakarta Sans", sans-serif';
+    var wrapped = [];
+    lines.forEach(function(line) {
+      if (!line) { wrapped.push(""); return; }
+      var words = line.split(/\s+/), current = "";
+      words.forEach(function(word) {
+        var candidate = current ? current + " " + word : word;
+        if (current && mctx.measureText(candidate).width > width - pad * 2) { wrapped.push(current); current = word; }
+        else current = candidate;
+      });
+      if (current) wrapped.push(current);
+    });
+    var canvas = document.createElement("canvas");
+    canvas.width = width; canvas.height = Math.max(500, pad * 2 + (wrapped.length + 2) * lineHeight);
+    var ctx = canvas.getContext("2d"); ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, width, canvas.height);
+    ctx.fillStyle = "#4f46e5"; ctx.font = '800 34px "Outfit", sans-serif'; ctx.fillText("JIO PLAY", pad, 62);
+    ctx.fillStyle = "#64748b"; ctx.font = '600 17px "Plus Jakarta Sans", sans-serif'; ctx.fillText("SLIP COPY", pad, 91);
+    var y = 140;
+    wrapped.forEach(function(line) {
+      if (line.indexOf("TOTAL:") === 0) { ctx.fillStyle = "#4f46e5"; ctx.font = '800 30px "Noto Sans Devanagari", sans-serif'; }
+      else if (line.toLowerCase().indexOf("warning:") === 0) { ctx.fillStyle = "#be123c"; ctx.font = '700 25px "Noto Sans Devanagari", sans-serif'; }
+      else { ctx.fillStyle = "#111827"; ctx.font = '27px "Noto Sans Devanagari", "Plus Jakarta Sans", sans-serif'; }
+      ctx.fillText(line, pad, y); y += lineHeight;
+    });
+    var pdf = new window.jspdf.jsPDF({ orientation: "portrait", unit: "mm", format: "a4", compress: true });
+    var pageHeightPx = Math.round(width * 297 / 210), pages = Math.ceil(canvas.height / pageHeightPx);
+    for (var page = 0; page < pages; page++) {
+      if (page) pdf.addPage();
+      var slice = document.createElement("canvas"); slice.width = width; slice.height = pageHeightPx;
+      var sctx = slice.getContext("2d"); sctx.fillStyle = "#ffffff"; sctx.fillRect(0, 0, width, pageHeightPx);
+      sctx.drawImage(canvas, 0, page * pageHeightPx, width, pageHeightPx, 0, 0, width, pageHeightPx);
+      pdf.addImage(slice.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, 210, 297, undefined, "FAST");
+    }
+    return pdf.output("blob");
+  }
+  $("sharePdfBtn").onclick = async function() {
+    if (!curSlip) return;
+    var btn = this, original = btn.textContent;
+    btn.disabled = true; btn.textContent = "PREPARING PDF...";
+    try {
+      var blob = makeSlipPdf(curSlip), fileName = "JIO-PLAY-Slip-" + ensureSlipId(curSlip) + ".pdf";
+      var file = new File([blob], fileName, { type: "application/pdf" });
+      if (window.JioNativeShare && window.JioNativeShare.sharePdf) {
+        await window.JioNativeShare.sharePdf({ blob: blob, fileName: fileName, title: curSlip.head || "JIO PLAY Slip" });
+      } else if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+        await navigator.share({ title: curSlip.head || "JIO PLAY Slip", files: [file] });
+      } else {
+        var url = URL.createObjectURL(blob), a = document.createElement("a");
+        a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+        alert("PDF saved to your device. File sharing is not available in this browser.");
+      }
+    } catch (err) {
+      if (err && err.name !== "AbortError") alert("Could not create/share PDF: " + (err.message || "Please try again."));
+    } finally { btn.disabled = false; btn.textContent = original; }
+  };
   $("sdel").onclick = function() {
     if (!curSlip) return;
     confirmTap(this, "Delete Slip", "Tap again to delete", function() {
@@ -3427,5 +3507,33 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   restoreSavedSession();
 })();
 </script>
+
+<script type="module">
+import { Share } from "https://esm.sh/@capacitor/share@6.0.2";
+import { Filesystem, Directory } from "https://esm.sh/@capacitor/filesystem@6.2.0";
+
+function blobToBase64(blob) {
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(String(reader.result).split(",")[1]); };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+window.JioNativeShare = {
+  shareText: function(options) { return Share.share(options); },
+  sharePdf: async function(options) {
+    var base64 = await blobToBase64(options.blob);
+    var saved = await Filesystem.writeFile({
+      path: options.fileName,
+      data: base64,
+      directory: Directory.Cache,
+      recursive: true
+    });
+    return Share.share({ title: options.title, dialogTitle: "Share PDF", files: [saved.uri] });
+  }
+};
+</script>
+
 </body>
 </html>
