@@ -3605,9 +3605,12 @@ async function connectNativePrinter() {
     printerConnected = true;
     try { localStorage.setItem(printerStorageKey, printerDeviceId); } catch (e) {}
   }
-  // Re-read GATT services and select the printer channel on every print.
-  // This prevents a stale cached generic 2A00 characteristic from being reused.
+  // Force a fresh GATT service discovery before each print. Android can
+  // otherwise return a stale/incomplete cached service list after reconnects.
   if (printerConnected) {
+    printerServiceId = null;
+    printerCharacteristicId = null;
+    await BleClient.discoverServices(printerDeviceId);
     var services = await BleClient.getServices(printerDeviceId), found = null;
     window.JioNativeBluetoothDiagnostics = services.map(function(svc) {
       return "Service " + svc.uuid + ": " + (svc.characteristics || []).map(function(ch) {
@@ -3615,13 +3618,12 @@ async function connectNativePrinter() {
         return ch.uuid + " [write=" + !!p.write + ", noResponse=" + !!p.writeWithoutResponse + "]";
       }).join("; ");
     }).join("\\n");
-    // SEZNIK MiniX_2329 exposes its printer data channel as
-    // service FF00 / characteristic FF02. Prefer it over generic
-    // Bluetooth characteristics such as 2A00 (Device Name).
+    // Only the SEZNIK printer data channel is valid for printing.
+    // Never send receipt data to generic Android services such as 1800/2A00.
     for (var s = 0; s < services.length && !found; s++) {
       var serviceUuid = String(services[s].uuid || "").toLowerCase();
       if (serviceUuid.indexOf("0000ff00-") !== 0) continue;
-      for (var c = 0; c < services[s].characteristics.length; c++) {
+      for (var c = 0; c < (services[s].characteristics || []).length; c++) {
         var ch = services[s].characteristics[c];
         var chUuid = String(ch.uuid || "").toLowerCase();
         var props = ch.properties || {};
@@ -3631,17 +3633,9 @@ async function connectNativePrinter() {
         }
       }
     }
-    // Fallback only if the known SEZNIK printer channel is not exposed.
-    for (var s = 0; s < services.length && !found; s++) {
-      for (var c = 0; c < services[s].characteristics.length; c++) {
-        var props = services[s].characteristics[c].properties || {};
-        if (props.writeWithoutResponse || props.write) {
-          found = { service: services[s].uuid, characteristic: services[s].characteristics[c].uuid, noResponse: !!props.writeWithoutResponse };
-          break;
-        }
-      }
+    if (!found) {
+      throw new Error("SEZNIK printer channel FF00/FF02 was not found after fresh service discovery. Check diagnostic channels.");
     }
-    if (!found) throw new Error("SEZNIK connected, but no writable printer channel was found.");
     printerServiceId = found.service;
     printerCharacteristicId = found.characteristic;
     printerUsesNoResponse = found.noResponse;
@@ -3686,7 +3680,7 @@ window.JioNativeBluetooth = {
         var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
         if (printerUsesNoResponse) {
           await BleClient.writeWithoutResponse(printerDeviceId, printerServiceId, printerCharacteristicId, view);
-          await new Promise(function(resolve) { setTimeout(resolve, 8); });
+          await new Promise(function(resolve) { setTimeout(resolve, 12); });
         } else {
           await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
           await new Promise(function(resolve) { setTimeout(resolve, 6); });
