@@ -3585,7 +3585,9 @@ async function connectNativePrinter() {
     printerConnected = true;
     try { localStorage.setItem(printerStorageKey, printerDeviceId); } catch (e) {}
   }
-  if (!printerServiceId || !printerCharacteristicId) {
+  // Re-read GATT services and select the printer channel on every print.
+  // This prevents a stale cached generic 2A00 characteristic from being reused.
+  if (printerConnected) {
     var services = await BleClient.getServices(printerDeviceId), found = null;
     window.JioNativeBluetoothDiagnostics = services.map(function(svc) {
       return "Service " + svc.uuid + ": " + (svc.characteristics || []).map(function(ch) {
