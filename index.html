@@ -3600,19 +3600,20 @@ async function connectNativePrinter() {
 window.JioNativeBluetooth = {
   print: async function(buffer) {
     await connectNativePrinter();
-    var mtu = 23;
-    try { mtu = await BleClient.getMtu(printerDeviceId); } catch (e) {}
-    var chunkSize = Math.max(20, Math.min(180, (mtu || 23) - 3));
+    // Match the proven Chrome Web Bluetooth printer transfer: 64-byte chunks
+    // with a short pause after every write to avoid overrunning the printer.
+    var chunkSize = 64;
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
     for (var i = 0; i < bytes.length; i += chunkSize) {
       var part = bytes.slice(i, i + chunkSize);
       var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
       if (printerUsesNoResponse) {
         await BleClient.writeWithoutResponse(printerDeviceId, printerServiceId, printerCharacteristicId, view);
+        await new Promise(function(resolve) { setTimeout(resolve, 12); });
       } else {
         await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
+        await new Promise(function(resolve) { setTimeout(resolve, 6); });
       }
-      if (printerUsesNoResponse) await new Promise(function(resolve) { setTimeout(resolve, 6); });
     }
   }
 };
