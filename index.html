@@ -3518,7 +3518,6 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 <script type="module">
 import { Share } from "https://esm.sh/@capacitor/share@6.0.2";
 import { Filesystem, Directory } from "https://esm.sh/@capacitor/filesystem@6.0.4";
-import { BleClient } from "https://esm.sh/@capacitor-community/bluetooth-le@6.0.1";
 
 function blobToBase64(blob) {
   return new Promise(function(resolve, reject) {
@@ -3542,11 +3541,16 @@ window.JioNativeShare = {
   }
 };
 
+var BleClient = null;
 var printerDeviceId = null, printerServiceId = null, printerCharacteristicId = null;
 var printerUsesNoResponse = false, printerConnected = false;
 var printerStorageKey = "jio_play_ble_printer_device_id_v1";
 
 async function connectNativePrinter() {
+  if (!BleClient) {
+    var bleModule = await import("https://esm.sh/@capacitor-community/bluetooth-le@6.0.1");
+    BleClient = bleModule.BleClient;
+  }
   await BleClient.initialize();
   if (!printerDeviceId) {
     try { printerDeviceId = localStorage.getItem(printerStorageKey); } catch (e) {}
