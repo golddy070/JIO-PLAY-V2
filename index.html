@@ -3070,9 +3070,21 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   async function directBluetoothPrint() {
     if (isPrinting || !curSlip) return;
     var st = $("btStatus");
-    if (!navigator.bluetooth) { st.textContent = "Web Bluetooth requires Chrome over HTTPS."; return; }
     isPrinting = true; $("btPrint").disabled = true;
     try {
+      var r = renderSlipBitmap384(curSlip, 100);
+      var header = new Uint8Array([0x1d, 0x76, 0x30, 0x00, r.widthBytes & 0xff, (r.widthBytes >> 8) & 0xff, r.height & 0xff, (r.height >> 8) & 0xff]);
+      var footer = new Uint8Array(20).fill(0x0a), payload = new Uint8Array(header.length + r.bitmap.length + footer.length + 2);
+      payload.set([0x1b, 0x40], 0); payload.set(header, 2); payload.set(r.bitmap, header.length + 2); payload.set(footer, header.length + 2 + r.bitmap.length);
+
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform() && window.JioNativeBluetooth) {
+        st.textContent = "Connecting to SEZNIK printer...";
+        await window.JioNativeBluetooth.print(payload);
+        st.textContent = "Print complete ✓ Printer remains ready.";
+        return;
+      }
+
+      if (!navigator.bluetooth) { st.textContent = "Web Bluetooth requires Chrome over HTTPS."; return; }
       if (!btDevice || !btDevice.gatt || !btDevice.gatt.connected || !btChar) {
         btDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: [0xff00, "0000ff00-0000-1000-8000-00805f9b34fb"] });
         var server = await btDevice.gatt.connect(), services = await server.getPrimaryServices(), foundChar = null;
@@ -3084,14 +3096,9 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
         if (!foundChar) throw new Error("No writable channel found.");
         btChar = foundChar;
       }
-      var r = renderSlipBitmap384(curSlip, 100);
-      await streamLowDraw(btChar, new Uint8Array([0x1b, 0x40]));
-      var header = new Uint8Array([0x1d, 0x76, 0x30, 0x00, r.widthBytes & 0xff, (r.widthBytes >> 8) & 0xff, r.height & 0xff, (r.height >> 8) & 0xff]);
-      var footer = new Uint8Array(20).fill(0x0a), payload = new Uint8Array(header.length + r.bitmap.length + footer.length);
-      payload.set(header, 0); payload.set(r.bitmap, header.length); payload.set(footer, header.length + r.bitmap.length);
       await streamLowDraw(btChar, payload);
       st.textContent = "Print complete ✓";
-    } catch (err) { btChar = null; st.textContent = "Print stopped: " + err.message; }
+    } catch (err) { btChar = null; st.textContent = "Print stopped: " + (err && err.message ? err.message : String(err)); }
     finally { isPrinting = false; $("btPrint").disabled = false; }
   }
 
@@ -3511,6 +3518,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 <script type="module">
 import { Share } from "https://esm.sh/@capacitor/share@6.0.2";
 import { Filesystem, Directory } from "https://esm.sh/@capacitor/filesystem@6.0.4";
+import { BleClient } from "https://esm.sh/@capacitor-community/bluetooth-le@6.0.1";
 
 function blobToBase64(blob) {
   return new Promise(function(resolve, reject) {
@@ -3531,6 +3539,77 @@ window.JioNativeShare = {
       recursive: true
     });
     return Share.share({ title: options.title, dialogTitle: "Share PDF", files: [saved.uri] });
+  }
+};
+
+var printerDeviceId = null, printerServiceId = null, printerCharacteristicId = null;
+var printerUsesNoResponse = false, printerConnected = false;
+var printerStorageKey = "jio_play_ble_printer_device_id_v1";
+
+async function connectNativePrinter() {
+  await BleClient.initialize();
+  if (!printerDeviceId) {
+    try { printerDeviceId = localStorage.getItem(printerStorageKey); } catch (e) {}
+  }
+  if (printerDeviceId && !printerConnected) {
+    try {
+      await BleClient.connect(printerDeviceId, function() {
+        printerConnected = false;
+        printerServiceId = null;
+        printerCharacteristicId = null;
+      });
+      printerConnected = true;
+    } catch (e) {
+      printerDeviceId = null;
+      try { localStorage.removeItem(printerStorageKey); } catch (ignore) {}
+    }
+  }
+  if (!printerDeviceId) {
+    var device = await BleClient.requestDevice({});
+    printerDeviceId = device.deviceId;
+    await BleClient.connect(printerDeviceId, function() {
+      printerConnected = false;
+      printerServiceId = null;
+      printerCharacteristicId = null;
+    });
+    printerConnected = true;
+    try { localStorage.setItem(printerStorageKey, printerDeviceId); } catch (e) {}
+  }
+  if (!printerServiceId || !printerCharacteristicId) {
+    var services = await BleClient.getServices(printerDeviceId), found = null;
+    for (var s = 0; s < services.length && !found; s++) {
+      for (var c = 0; c < services[s].characteristics.length; c++) {
+        var props = services[s].characteristics[c].properties || {};
+        if (props.writeWithoutResponse || props.write) {
+          found = { service: services[s].uuid, characteristic: services[s].characteristics[c].uuid, noResponse: !!props.writeWithoutResponse };
+          break;
+        }
+      }
+    }
+    if (!found) throw new Error("SEZNIK connected, but no writable printer channel was found.");
+    printerServiceId = found.service;
+    printerCharacteristicId = found.characteristic;
+    printerUsesNoResponse = found.noResponse;
+  }
+}
+
+window.JioNativeBluetooth = {
+  print: async function(buffer) {
+    await connectNativePrinter();
+    var mtu = 23;
+    try { mtu = await BleClient.getMtu(printerDeviceId); } catch (e) {}
+    var chunkSize = Math.max(20, Math.min(180, (mtu || 23) - 3));
+    var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+    for (var i = 0; i < bytes.length; i += chunkSize) {
+      var part = bytes.slice(i, i + chunkSize);
+      var view = new DataView(part.buffer, part.byteOffset, part.byteLength);
+      if (printerUsesNoResponse) {
+        await BleClient.writeWithoutResponse(printerDeviceId, printerServiceId, printerCharacteristicId, view);
+      } else {
+        await BleClient.write(printerDeviceId, printerServiceId, printerCharacteristicId, view);
+      }
+      if (printerUsesNoResponse) await new Promise(function(resolve) { setTimeout(resolve, 6); });
+    }
   }
 };
 </script>
