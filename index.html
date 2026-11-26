@@ -3593,6 +3593,23 @@ async function connectNativePrinter() {
         return ch.uuid + " [write=" + !!p.write + ", noResponse=" + !!p.writeWithoutResponse + "]";
       }).join("; ");
     }).join("\\n");
+    // SEZNIK MiniX_2329 exposes its printer data channel as
+    // service FF00 / characteristic FF02. Prefer it over generic
+    // Bluetooth characteristics such as 2A00 (Device Name).
+    for (var s = 0; s < services.length && !found; s++) {
+      var serviceUuid = String(services[s].uuid || "").toLowerCase();
+      if (serviceUuid.indexOf("0000ff00-") !== 0) continue;
+      for (var c = 0; c < services[s].characteristics.length; c++) {
+        var ch = services[s].characteristics[c];
+        var chUuid = String(ch.uuid || "").toLowerCase();
+        var props = ch.properties || {};
+        if (chUuid.indexOf("0000ff02-") === 0 && (props.writeWithoutResponse || props.write)) {
+          found = { service: services[s].uuid, characteristic: ch.uuid, noResponse: !!props.writeWithoutResponse };
+          break;
+        }
+      }
+    }
+    // Fallback only if the known SEZNIK printer channel is not exposed.
     for (var s = 0; s < services.length && !found; s++) {
       for (var c = 0; c < services[s].characteristics.length; c++) {
         var props = services[s].characteristics[c].properties || {};
