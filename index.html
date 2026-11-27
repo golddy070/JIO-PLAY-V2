@@ -2091,8 +2091,11 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     renderAdminAnnouncement();
     renderResultSlides();
     renderSlideAdminList();
-    if ($("slideSpeedInput")) { $("slideSpeedInput").value=String(slideSpeed); $("slideSpeedValue").textContent=slideSpeed+" sec"; }
-    if ($("headerLinkInput")) $("headerLinkInput").value=headerLinkUrl;
+    if ($("slideSpeedInput")) {
+      if (document.activeElement !== $("slideSpeedInput")) $("slideSpeedInput").value=String(slideSpeed);
+      $("slideSpeedValue").textContent=slideSpeed+" sec";
+    }
+    if ($("headerLinkInput") && document.activeElement !== $("headerLinkInput")) $("headerLinkInput").value=headerLinkUrl;
     if ($("quickNewBtn")) $("quickNewBtn").classList.toggle("is-unconfigured", !(headerLinkUrl.indexOf("https://")===0 || headerLinkUrl.indexOf("http://")===0));
     var isPaused = !admin && st === "paused";
     if ($("userSlipLockBanner")) $("userSlipLockBanner").classList.toggle("hide", !isPaused);
@@ -3000,12 +3003,17 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 
   function renderMarketTab() {
     if (!isAdmin() || !$("mktHeadingsList")) return;
+    // Background cloud refreshes must not collapse the market editor the admin is using.
+    var openMarketHeadings = Array.from($("mktHeadingsList").querySelectorAll("[data-mpanel]"))
+      .filter(function(panel) { return !panel.classList.contains("hide"); })
+      .map(function(panel) { var card = panel.closest("[data-mhead]"); return card ? card.getAttribute("data-mhead") : ""; });
     marketConfig = normalizeMarketConfig(marketConfig, heads);
     $("mktHeadingsList").innerHTML = heads.map(function(hName, idx) {
       var cfg = marketConfig[hName], openCfg = cfg.sessions.OPEN || { active: true, cutoff: "" }, closeCfg = cfg.sessions.CLOSE || { active: true, cutoff: "" };
+      var keepOpen = openMarketHeadings.indexOf(hName) >= 0;
       return '<div class="market-heading-card" data-mhead="' + esc(hName) + '">' +
-        '<button type="button" class="market-heading-toggle nav-item" data-mtoggle="' + idx + '" aria-expanded="false"><span>' + esc(hName) + '</span><span class="nav-pill">EDIT</span></button>' +
-        '<div class="market-heading-panel hide" data-mpanel="' + idx + '">' +
+        '<button type="button" class="market-heading-toggle nav-item" data-mtoggle="' + idx + '" aria-expanded="' + (keepOpen ? "true" : "false") + '"><span>' + esc(hName) + '</span><span class="nav-pill">EDIT</span></button>' +
+        '<div class="market-heading-panel' + (keepOpen ? "" : " hide") + '" data-mpanel="' + idx + '">' +
         '<div class="market-heading-status"><select class="m-h-active" data-mh="' + esc(hName) + '"><option value="1"' + (cfg.active !== false ? " selected" : "") + '>Active</option><option value="0"' + (cfg.active === false ? " selected" : "") + '>Closed</option></select>' + (heads.length > 1 ? '<button type="button" class="logout-mini" data-delmhead="' + esc(hName) + '">Remove</button>' : "") + '</div>' +
         '<div class="limit-grid"><div class="limit-field"><label>Rename Heading</label><input type="text" class="m-h-rename" data-mh="' + esc(hName) + '" data-midx="' + idx + '" value="' + esc(hName) + '"></div>' +
         '<div class="limit-field"><label>Heading Cut-Off (HH:MM)</label><input type="time" class="m-h-cutoff" data-mh="' + esc(hName) + '" value="' + esc(cfg.cutoff || "") + '"></div>' +
@@ -3019,13 +3027,16 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
 
   function renderUserList() {
     if (!$("userListBox")) return;
+    // Preserve expanded user records across the 12-second cloud refresh.
+    var openUserIds = Array.from($("userListBox").querySelectorAll(".user-drawer[open]"))
+      .map(function(el) { return el.getAttribute("data-user-id"); });
     var codeMap = getUserCodeMap(users);
     $("userCountBadge").textContent = String(users.length);
     $("userListBox").innerHTML = users.map(function(u) {
       var normU=normalizeUserObj(u),m=normU.multipliers,isAdm=normU.role==="admin";
       var statusHtml=isAdm?'<span class="status-chip active">ACTIVE (BOSS)</span>':
         '<select class="u-status-sel" data-uid="'+esc(normU.id)+'" aria-label="Status for '+esc(normU.id)+'"><option value="active"'+(normU.status==="active"?" selected":"")+'>Active</option><option value="paused"'+(normU.status==="paused"?" selected":"")+'>Paused (No Slips)</option><option value="blocked"'+(normU.status==="blocked"?" selected":"")+'>Blocked (No Login)</option></select>';
-      return '<details class="user-drawer"><summary><span class="user-drawer-name">'+esc(normU.id)+'</span><span class="tag">ID: '+esc(codeMap[normU.id]||"")+'</span><span class="user-drawer-status">'+(isAdm?"ADMIN":esc(normU.status.toUpperCase()))+'</span></summary><div class="user-drawer-body"><div class="user-row-top"><b>'+esc(normU.id)+'</b><div class="user-controls-row">'+statusHtml+(isAdm?"":'<button type="button" class="logout-mini" data-deluser="'+esc(normU.id)+'">Remove</button>')+'</div></div><div class="mult-box"><div style="font-family:Outfit,sans-serif;font-size:11.5px;font-weight:800;color:#c4b5fd;margin-bottom:6px">Payout Multipliers</div><div class="limit-grid" style="margin:4px 0"><div class="limit-field"><label>Single (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="single" value="'+m.single+'"></div><div class="limit-field"><label>Jodi (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="jodi" value="'+m.jodi+'"></div><div class="limit-field"><label>SP Simple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="sp" value="'+m.sp+'"></div><div class="limit-field"><label>DP Double 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="dp" value="'+m.dp+'"></div><div class="limit-field"><label>TP Triple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="tp" value="'+m.tp+'"></div><div class="limit-field"><label>JK (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="jk" value="'+m.jk+'"></div><div class="limit-field" style="grid-column:1/-1"><label>SANGAM (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="sangam" value="'+m.sangam+'"></div></div><div class="row" style="margin:6px 0 0"><button type="button" class="btn-primary save-mult-btn" data-saveuid="'+esc(normU.id)+'" style="padding:8px 10px;font-size:11.5px">Save Multipliers</button></div></div></div></details>';
+      return '<details class="user-drawer" data-user-id="' + esc(normU.id) + '"' + (openUserIds.indexOf(normU.id) >= 0 ? " open" : "") + '><summary><span class="user-drawer-name">'+esc(normU.id)+'</span><span class="tag">ID: '+esc(codeMap[normU.id]||"")+'</span><span class="user-drawer-status">'+(isAdm?"ADMIN":esc(normU.status.toUpperCase()))+'</span></summary><div class="user-drawer-body"><div class="user-row-top"><b>'+esc(normU.id)+'</b><div class="user-controls-row">'+statusHtml+(isAdm?"":'<button type="button" class="logout-mini" data-deluser="'+esc(normU.id)+'">Remove</button>')+'</div></div><div class="mult-box"><div style="font-family:Outfit,sans-serif;font-size:11.5px;font-weight:800;color:#c4b5fd;margin-bottom:6px">Payout Multipliers</div><div class="limit-grid" style="margin:4px 0"><div class="limit-field"><label>Single (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="single" value="'+m.single+'"></div><div class="limit-field"><label>Jodi (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="jodi" value="'+m.jodi+'"></div><div class="limit-field"><label>SP Simple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="sp" value="'+m.sp+'"></div><div class="limit-field"><label>DP Double 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="dp" value="'+m.dp+'"></div><div class="limit-field"><label>TP Triple 3D (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="tp" value="'+m.tp+'"></div><div class="limit-field"><label>JK (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="jk" value="'+m.jk+'"></div><div class="limit-field" style="grid-column:1/-1"><label>SANGAM (×)</label><input type="number" step="any" min="0" class="m-inp" data-muid="'+esc(normU.id)+'" data-mkey="sangam" value="'+m.sangam+'"></div></div><div class="row" style="margin:6px 0 0"><button type="button" class="btn-primary save-mult-btn" data-saveuid="'+esc(normU.id)+'" style="padding:8px 10px;font-size:11.5px">Save Multipliers</button></div></div></div></details>';
     }).join("");
   }
 
