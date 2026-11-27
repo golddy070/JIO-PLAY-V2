@@ -63,6 +63,36 @@ jobs:
         working-directory: android
         run: ./gradlew assembleDebug
 
+      - name: Verify the icon inside the finished APK
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | tee /tmp/jio-play-apk-badging.txt
+          grep -q "jio_play_launcher" /tmp/jio-play-apk-badging.txt
+          .icon-venv/bin/python - "$APK" <<'PY'
+          import sys, zipfile
+          from io import BytesIO
+          from PIL import Image
+
+          apk = sys.argv[1]
+          with zipfile.ZipFile(apk) as archive:
+              paths = [
+                  name for name in archive.namelist()
+                  if name.startswith("res/mipmap-")
+                  and name.endswith("/jio_play_launcher.png")
+              ]
+              if len(paths) < 5:
+                  raise SystemExit(f"Expected at least 5 packaged JIO-PLAY icon densities, found {len(paths)}")
+              for path in paths:
+                  image = Image.open(BytesIO(archive.read(path))).convert("RGBA")
+                  pixels = list(image.getdata())
+                  red = sum(1 for r, g, b, a in pixels if a > 200 and r > 180 and g < 70 and b < 80)
+                  white = sum(1 for r, g, b, a in pixels if a > 200 and r > 220 and g > 220 and b > 220)
+                  if red < len(pixels) * 0.25 or white < 10:
+                      raise SystemExit(f"Packaged icon does not contain expected red/white artwork: {path}")
+          print(f"Verified {len(paths)} JIO-PLAY red-circle/white-wordmark PNGs inside the APK.")
+          PY
+
       - name: Prepare direct APK download
         run: |
           mkdir -p release
