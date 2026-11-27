@@ -1,6 +1,6 @@
 {
   "appId": "com.jioplay.v2",
-  "appName": "JIO PLAY V2",
+  "appName": "JIO-PLAY",
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
