@@ -3650,7 +3650,7 @@ window.JioNativeBluetooth = {
   getLastDiagnostic: function() { return nativePrintDiagnostic; },
   print: async function(buffer) {
     var bytes = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-    var chunksSent = 0, chunkSize = 50, currentChunk = 0, negotiatedMtu = null, priorityRequested = false;
+    var chunksSent = 0, chunkSize = 75, currentChunk = 0, negotiatedMtu = null, priorityRequested = false;
     nativePrintDiagnostic = {
       status: "Starting",
       stage: "Connecting to printer",
@@ -3678,7 +3678,7 @@ window.JioNativeBluetooth = {
       nativePrintDiagnostic.writeMode = printerUsesNoResponse ? "writeWithoutResponse" : "write";
       nativePrintDiagnostic.diagnostics = window.JioNativeBluetoothDiagnostics || "Not available";
       // Ask Android for a low-latency connection during the print transfer.
-      // Test 50-byte chunks as a cautious step above the original 20-byte size.
+      // Test 75-byte chunks as the next step above the stable 50-byte size.
       // The negotiated MTU is 240, but printer firmware compatibility must still be tested.
       try {
         await BleClient.requestConnectionPriority(printerDeviceId, 1);
