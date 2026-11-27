@@ -3064,7 +3064,7 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
     for (var i = 0; i < buffer.length; i += 64) {
       var slice = buffer.slice(i, i + 64);
       if (useNoResp) { await char.writeValueWithoutResponse(slice); await new Promise(function(r) { setTimeout(r, 12); }); }
-      else { await char.writeValue(slice); await new Promise(function(r) { setTimeout(r, 6); }); }
+      else { await char.writeValue(slice); await new Promise(function(r) { setTimeout(r, 12); }); }
     }
   }
   async function directBluetoothPrint() {
