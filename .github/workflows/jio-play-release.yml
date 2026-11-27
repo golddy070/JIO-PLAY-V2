@@ -1,0 +1,83 @@
+name: Build and publish JIO-PLAY APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.json"
+      - "scripts/generate-android-icons.py"
+      - ".github/workflows/jio-play-release.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: jio-play-apk-release
+  cancel-in-progress: false
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Bundle web app into APK
+        run: npm run copy-web
+
+      - name: Generate native Android project
+        run: npx cap add android
+
+      - name: Sync Capacitor plugins
+        run: npx cap sync android
+
+      - name: Generate official JIO-PLAY launcher icons
+        run: |
+          python3 -m pip install --user pillow
+          python3 scripts/generate-android-icons.py
+
+      - name: Build installable Android APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+
+      - name: Prepare direct APK download
+        run: |
+          mkdir -p release
+          cp android/app/build/outputs/apk/debug/app-debug.apk release/JIO-PLAY.apk
+          test -s release/JIO-PLAY.apk
+          sha256sum release/JIO-PLAY.apk | tee release/SHA256SUMS.txt
+
+      - name: Publish one direct APK in GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: jio-play-${{ github.run_number }}
+          name: JIO-PLAY Build ${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            release/JIO-PLAY.apk
+            release/SHA256SUMS.txt
+          generate_release_notes: true
+          make_latest: true
