@@ -40,7 +40,9 @@ for density, size in {
 # The adaptive background is the official red brand color.
 adaptive = Image.new("RGBA", (432, 432), (0, 0, 0, 0))
 draw = ImageDraw.Draw(adaptive)
-font = font_for("JIO", 330, 150)
+# Android adaptive icons are masked to a central safe zone (about 2/3
+# of the foreground canvas). Keep the complete wordmark well inside it.
+font = font_for("JIO", 250, 105)
 draw.text((216, 216), "JIO", font=font, fill=WHITE, anchor="mm")
 drawable = RES / "drawable"
 drawable.mkdir(parents=True, exist_ok=True)
