@@ -2078,8 +2078,12 @@ button:focus-visible,.menu-btn:focus-visible,.home-dot-btn:focus-visible{outline
   function applyRolePermissions() {
     var admin = isAdmin();
     document.querySelectorAll(".admin-only").forEach(function(el) { el.classList.toggle("hide", !admin); });
-    if ($("resultAdminPanel")) $("resultAdminPanel").classList.add("hide");
-    if ($("linkSettingsPanel")) $("linkSettingsPanel").classList.add("hide");
+    // Keep expanded admin panels open during background cloud syncs.
+    // Only force-close admin-only panels when the current account is not an admin.
+    if (!admin) {
+      if ($("resultAdminPanel")) $("resultAdminPanel").classList.add("hide");
+      if ($("linkSettingsPanel")) $("linkSettingsPanel").classList.add("hide");
+    }
     if ($("vPanelTitle")) $("vPanelTitle").textContent = admin ? "Publish & Verify Result" : "Verify Result (Read-Only)";
     if ($("vRunBtn")) $("vRunBtn").textContent = admin ? "Verify Entries" : "Verify My Entries";
     var rec = refreshCurrentUserRecord();
